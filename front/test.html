@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Model · AI Training Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Wider section for test page */
+      .page-main .container {
+        max-width: 1400px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="sub-hero">
+      <div class="hero-inner">
+        <p class="back-link">
+          <a href="index.html">&larr; Back to main page</a>
+        </p>
+        <h1>Test Model</h1>
+        <p class="hero-subtitle">
+          Test an already trained AI model by selecting a run ID.
+        </p>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <section class="section">
+        <div class="container">
+          <!-- First section: Choose Run -->
+          <div class="form-card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <div>
+                <h2>Choose Run</h2>
+                <p class="muted">
+                  Enter a run ID to test a specific model run.
+                </p>
+              </div>
+            </div>
+
+            <form id="test-run-form">
+              <div class="field-group">
+                <label for="testRunId">Run ID</label>
+                <input
+                  type="text"
+                  id="testRunId"
+                  name="testRunId"
+                  placeholder="e.g. run_001"
+                />
+                <p class="field-help">
+                  Enter the ID of the run you want to test.
+                </p>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn primary">
+                  Test
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Test Run Results Section -->
+          <div id="test-run-results" class="form-card" style="margin-bottom: 2rem; display: none;">
+            <div class="card-header">
+              <div>
+                <h2>Test Run Results</h2>
+                <p class="muted">
+                  Current status of the test run job.
+                </p>
+              </div>
+            </div>
+            <div id="testRunResultsContent" class="inspect-results-content">
+              <!-- Results will be displayed here -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>AI Training Portal &middot; Test model</p>
+      </div>
+    </footer>
+
+    <script src="test.js"></script>
+  </body>
+</html>

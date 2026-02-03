@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Train New Model · AI Training Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="sub-hero">
+      <div class="hero-inner">
+        <p class="back-link">
+          <a href="index.html">&larr; Back to main page</a>
+        </p>
+        <h1>Train a New Model</h1>
+        <p class="hero-subtitle">
+          Prepare the configuration for your AI model: choose a model type, decide if
+          you want predefined layers, or build your own custom layer stack.
+        </p>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <section class="section">
+        <div class="container">
+          <div class="split-narrow">
+            <div class="dataset-section-container" style="grid-column: 1;">
+              <!-- Data preparation form -->
+              <div class="form-card" id="datasetPreparationCard">
+                <div class="card-header">
+                  <div>
+                    <h2>Data preparation</h2>
+                    <p class="muted">
+                      Configure your dataset provider and data transformations.
+                    </p>
+                  </div>
+                  <button type="button" class="btn small secondary" id="toggleDatasetConfigBtn">
+                    Show configuration
+                  </button>
+                </div>
+
+                <form id="dataset-form">
+                  <div class="field-group">
+                    <label for="datasetProvider">Dataset provider</label>
+                    <select id="datasetProvider" name="datasetProvider">
+                      <option value="sklearn" selected>Sklearn</option>
+                      <option value="hugging face">HuggingFace</option>
+                    </select>
+                    <p class="field-help">
+                      Select the dataset provider to use.
+                    </p>
+                  </div>
+
+                  <!-- Sklearn configuration block -->
+                  <div id="sklearnConfigFields">
+                    <div class="field-group">
+                      <label for="datasetFn">Dataset function (dataset_fn)</label>
+                      <input
+                        type="text"
+                        id="datasetFn"
+                        name="datasetFn"
+                        placeholder="e.g. load_iris"
+                      />
+                      <p class="field-help">
+                        Name of the function from <code>sklearn.datasets</code> that will be
+                        used to load the data.
+                      </p>
+                    </div>
+
+                    <div class="field-group inline">
+                      <div>
+                        <label for="datasetStratify">Stratify splits</label>
+                        <p class="field-help">
+                          Keep the class balance similar across train/val/test splits.
+                        </p>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" id="datasetStratify" checked />
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="taskType">Task type</label>
+                      <select id="taskType" name="taskType">
+                        <option value="classification" selected>Classification</option>
+                        <option value="regression">Regression</option>
+                      </select>
+                      <p class="field-help">
+                        Select whether the task is classification or regression.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="testSize">Test size (optional)</label>
+                      <input
+                        type="number"
+                        id="testSize"
+                        name="testSize"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        placeholder="e.g. 0.2"
+                      />
+                      <p class="field-help">
+                        Proportion of the dataset to include in the test split. Leave empty for no test split.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="valSize">Validation size</label>
+                      <input
+                        type="number"
+                        id="valSize"
+                        name="valSize"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value="0.2"
+                        placeholder="0.2"
+                      />
+                      <p class="field-help">
+                        Proportion of the dataset to include in the validation split.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- HuggingFace configuration block -->
+                  <div id="hfConfigFields" hidden>
+                    <div class="field-group">
+                      <label for="hfId">Dataset ID</label>
+                      <input
+                        type="text"
+                        id="hfId"
+                        name="hfId"
+                        placeholder="e.g. glue, sst2"
+                      />
+                      <p class="field-help">
+                        The HuggingFace dataset identifier.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfName">Name (optional)</label>
+                      <input
+                        type="text"
+                        id="hfName"
+                        name="hfName"
+                        placeholder="e.g. sst2"
+                      />
+                      <p class="field-help">
+                        Optional name for the dataset configuration.
+                      </p>
+                      <button
+                        type="button"
+                        class="btn small secondary"
+                        id="hfDatasetInfoBtn"
+                        style="margin-top: 0.5rem;"
+                      >
+                        View dataset info
+                      </button>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfTask">Task type</label>
+                      <select id="hfTask" name="hfTask">
+                        <option value="classification" selected>Classification</option>
+                        <option value="regression">Regression</option>
+                      </select>
+                      <p class="field-help">
+                        Select whether the task is classification or regression.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfMetaType">Meta type</label>
+                      <select id="hfMetaType" name="hfMetaType">
+                        <option value="tabular" selected>Tabular</option>
+                        <option value="image">Image</option>
+                      </select>
+                      <p class="field-help">
+                        Select the meta type of the dataset.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfTrainSplit">Train split</label>
+                      <input
+                        type="text"
+                        id="hfTrainSplit"
+                        name="hfTrainSplit"
+                        placeholder="e.g. train"
+                      />
+                      <p class="field-help">
+                        Name of the training split in the dataset.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfValSplit">Validation split</label>
+                      <input
+                        type="text"
+                        id="hfValSplit"
+                        name="hfValSplit"
+                        placeholder="e.g. validation"
+                      />
+                      <p class="field-help">
+                        Name of the validation split in the dataset.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfTestSplit">Test split (optional)</label>
+                      <input
+                        type="text"
+                        id="hfTestSplit"
+                        name="hfTestSplit"
+                        placeholder="e.g. test"
+                      />
+                      <p class="field-help">
+                        Optional name of the test split in the dataset. Leave empty if not available.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfLoadDsArgs">Load dataset arguments (JSON)</label>
+                      <textarea
+                        id="hfLoadDsArgs"
+                        name="hfLoadDsArgs"
+                        rows="4"
+                        placeholder='{"subset": "sst2", "split": "train"}'
+                        style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                      ></textarea>
+                      <p id="hfLoadDsArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                      <p class="field-help">
+                        Additional arguments for loading the dataset as JSON.
+                      </p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="hfMapper">Mapper</label>
+                      <select id="hfMapper" name="hfMapper">
+                        <option value="simple" selected>Simple</option>
+                      </select>
+                      <p class="field-help">
+                        Select the mapper type for transforming the dataset.
+                      </p>
+                    </div>
+
+                    <div id="simpleMapperFields">
+                      <div class="field-group">
+                        <label for="simpleMapperXMapping">X mapping</label>
+                        <input
+                          type="text"
+                          id="simpleMapperXMapping"
+                          name="simpleMapperXMapping"
+                          placeholder="e.g. sentence"
+                        />
+                        <p class="field-help">
+                          Field name in the dataset to use as input (X).
+                        </p>
+                      </div>
+
+                      <div class="field-group">
+                        <label for="simpleMapperYMapping">Y mapping</label>
+                        <input
+                          type="text"
+                          id="simpleMapperYMapping"
+                          name="simpleMapperYMapping"
+                          placeholder="e.g. label"
+                        />
+                        <p class="field-help">
+                          Field name in the dataset to use as target (Y).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Transform sections -->
+                  <div class="field-group">
+                    <div class="field-header">
+                      <div>
+                        <label>Data transformations</label>
+                        <p class="field-help">
+                          Configure how data should be transformed for training, validation, and testing.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="transform-sections">
+                      <div class="transform-section">
+                        <button type="button" class="transform-toggle" data-split="train">
+                          <span>Train transforms</span>
+                          <span class="toggle-icon">▶</span>
+                        </button>
+                        <div class="transform-content" id="trainTransformContent" hidden>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Transform</h4>
+                                <p class="field-help">Add transformations in the order they should be applied</p>
+                              </div>
+                              <select id="trainTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="trainTransformList" class="transform-list" data-split="train" data-type="transform"></div>
+                          </div>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Target transform</h4>
+                                <p class="field-help">Add target transformations in order</p>
+                              </div>
+                              <select id="trainTargetTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="trainTargetTransformList" class="transform-list" data-split="train" data-type="target_transform"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="transform-section">
+                        <button type="button" class="transform-toggle" data-split="valid">
+                          <span>Valid transforms</span>
+                          <span class="toggle-icon">▶</span>
+                        </button>
+                        <div class="transform-content" id="validTransformContent" hidden>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Transform</h4>
+                                <p class="field-help">Add transformations in the order they should be applied</p>
+                              </div>
+                              <select id="validTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="validTransformList" class="transform-list" data-split="valid" data-type="transform"></div>
+                          </div>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Target transform</h4>
+                                <p class="field-help">Add target transformations in order</p>
+                              </div>
+                              <select id="validTargetTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="validTargetTransformList" class="transform-list" data-split="valid" data-type="target_transform"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="transform-section">
+                        <button type="button" class="transform-toggle" data-split="test">
+                          <span>Test transforms (optional)</span>
+                          <span class="toggle-icon">▶</span>
+                        </button>
+                        <div class="transform-content" id="testTransformContent" hidden>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Transform</h4>
+                                <p class="field-help">Add transformations in the order they should be applied</p>
+                              </div>
+                              <select id="testTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="testTransformList" class="transform-list" data-split="test" data-type="transform"></div>
+                          </div>
+                          <div class="transform-options">
+                            <div class="field-header">
+                              <div>
+                                <h4>Target transform</h4>
+                                <p class="field-help">Add target transformations in order</p>
+                              </div>
+                              <select id="testTargetTransformSelect" class="transform-select">
+                                <option value="">Add transformation...</option>
+                                <option value="to_tensor">Convert to Tensor</option>
+                                <option value="img_to_tensor">Image to Tensor</option>
+                                <option value="normalize_mean_std">Normalize (Mean & Std)</option>
+                                <option value="normalize_min_max">Normalize (Min-Max)</option>
+                                <option value="normalize_l1_l2">L1/L2 Normalization</option>
+                                <option value="random_horizontal_flip">Random Horizontal Flip</option>
+                                <option value="random_vertical_flip">Random Vertical Flip</option>
+                                <option value="random_rotation">Random Rotation</option>
+                              </select>
+                            </div>
+                            <div id="testTargetTransformList" class="transform-list" data-split="test" data-type="target_transform"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Batch size and Shuffle -->
+                  <div class="field-group">
+                    <label for="batchSize">Batch size</label>
+                    <input
+                      type="number"
+                      id="batchSize"
+                      name="batchSize"
+                      min="1"
+                      value="1"
+                      placeholder="1"
+                    />
+                    <p class="field-help">
+                      Number of samples per batch for the DataLoader.
+                    </p>
+                  </div>
+
+                  <div class="field-group inline">
+                    <div>
+                      <label for="shuffle">Shuffle</label>
+                      <p class="field-help">
+                        Whether to shuffle the data in the DataLoader.
+                      </p>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="shuffle" />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="submit" class="btn primary">
+                      Prepare dataset configuration
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Dataset configuration preview (hidden by default) -->
+              <div class="form-card" id="datasetConfigCard" hidden>
+                <div class="card-header">
+                  <div>
+                    <h2>Dataset configuration</h2>
+                    <p class="muted">
+                      This is the JSON configuration that will be sent to the backend.
+                    </p>
+                  </div>
+                  <button type="button" class="btn small secondary" id="toggleDatasetConfigBtnBack">
+                    Back to form
+                  </button>
+                </div>
+                <pre id="datasetConfigPreview" class="code-preview">{}</pre>
+              </div>
+            </div>
+
+          <div class="model-section-container" style="grid-column: 2;">
+            <!-- Model preparation form -->
+            <div class="form-card" id="modelPreparationCard">
+              <div class="card-header">
+                <div>
+                  <h2>Model preparation</h2>
+                  <p class="muted">
+                    Fill in these options to define how your model should look before
+                    training starts.
+                  </p>
+                </div>
+                <button type="button" class="btn small secondary" id="toggleModelConfigBtn">
+                  Show configuration
+                </button>
+              </div>
+
+              <form id="train-form">
+                <div class="field-group">
+                  <label for="modelType">Model type</label>
+                  <select id="modelType" name="modelType">
+                    <option value="mlp">Dense / MLP</option>
+                    <option value="cnn">Convolutional (CNN)</option>
+                    <option value="rnn">Recurrent (RNN)</option>
+                    <option value="transformer">Transformer</option>
+                  </select>
+                </div>
+
+                <div class="field-group inline">
+                  <div>
+                    <label for="usePresetLayers">Use PyTorch layers</label>
+                    <p class="field-help">
+                      When this is on, the backend will build layers using the PyTorch
+                      library instead of your custom layer classes. The custom layers
+                      list below will still describe the structure.
+                    </p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="usePresetLayers" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="field-group" id="layerEditorWrapper">
+                  <div class="field-header">
+                    <div>
+                      <label>Custom layers</label>
+                      <p class="field-help">
+                        Add the layers you want, in the order they should appear in the
+                        model.
+                      </p>
+                    </div>
+                    <button type="button" class="btn small primary" id="addLayerBtn">
+                      + Add layer
+                    </button>
+                  </div>
+
+                  <div id="layersContainer" class="layers-container">
+                    <!-- Layers will be inserted here by JavaScript -->
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn primary">
+                    Prepare model configuration
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Model configuration preview (hidden by default) -->
+            <div class="form-card" id="modelConfigCard" hidden>
+              <div class="card-header">
+                <div>
+                  <h2>Model configuration</h2>
+                  <p class="muted">
+                    This is the JSON configuration that will be sent to the backend.
+                  </p>
+                </div>
+                <button type="button" class="btn small secondary" id="toggleModelConfigBtnBack">
+                  Back to form
+                </button>
+              </div>
+              <pre id="modelConfigPreview" class="code-preview">{}</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Training Parameters Section -->
+        <div class="split-narrow" style="margin-top: 2rem;">
+          <div class="training-section-container" style="grid-column: 1 / span 2; width: 100%;">
+            <!-- Training parameters form -->
+            <div class="form-card" id="trainingParametersCard">
+              <div class="card-header">
+                <div>
+                  <h2>Training parameters</h2>
+                  <p class="muted">
+                    Configure the training process parameters and start training.
+                  </p>
+                </div>
+                <button type="button" class="btn small secondary" id="toggleTrainingConfigBtn">
+                  Show configuration
+                </button>
+              </div>
+
+              <form id="training-form">
+                <div class="field-group">
+                  <label for="expName">Experiment name</label>
+                  <input
+                    type="text"
+                    id="expName"
+                    name="expName"
+                    placeholder="e.g. iris_classification"
+                  />
+                  <p class="field-help">
+                    MLflow experiment name to organize your training runs.
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <label for="runName">Run name</label>
+                  <input
+                    type="text"
+                    id="runName"
+                    name="runName"
+                    placeholder="e.g. run_001"
+                  />
+                  <p class="field-help">
+                    MLflow run name to identify this specific training run.
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <label for="modelName">Model name</label>
+                  <input
+                    type="text"
+                    id="modelName"
+                    name="modelName"
+                    placeholder="e.g. iris_mlp_v1"
+                  />
+                  <p class="field-help">
+                    Name to identify the trained model in MLflow.
+                  </p>
+                </div>
+
+                <div class="field-group inline">
+                  <div>
+                    <label for="logTrainMetrics">Log training metrics</label>
+                    <p class="field-help">
+                      Whether to log training metrics to MLflow during training.
+                    </p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="logTrainMetrics" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="field-group">
+                  <label>Training configuration</label>
+                  <p class="field-help">
+                    Configure training parameters for the model.
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <label for="device">Device</label>
+                  <select id="device" name="device">
+                    <option value="cpu" selected>CPU</option>
+                    <option value="cuda">CUDA (GPU)</option>
+                  </select>
+                  <p class="field-help">
+                    Device to use for training (CPU or GPU).
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <label for="epochs">Epochs</label>
+                  <input
+                    type="number"
+                    id="epochs"
+                    name="epochs"
+                    min="1"
+                    value="10"
+                    placeholder="10"
+                  />
+                  <p class="field-help">
+                    Number of training epochs.
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <label for="numOfIters">Number of iterations</label>
+                  <input
+                    type="number"
+                    id="numOfIters"
+                    name="numOfIters"
+                    min="1"
+                    value="100"
+                    placeholder="100"
+                  />
+                  <p class="field-help">
+                    Number of training iterations per epoch.
+                  </p>
+                </div>
+
+                <div class="field-group">
+                  <div class="transform-section">
+                    <button type="button" class="transform-toggle" data-config="optimizer">
+                      <span>Optimizer</span>
+                      <span class="toggle-icon">▶</span>
+                    </button>
+                    <div class="transform-content" id="optimizerContent" hidden>
+                      <p class="field-help" style="margin-bottom: 0.8rem;">
+                        Configure the optimizer type and its arguments as JSON.
+                      </p>
+                      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>
+                          <label for="optimizerType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                          <input
+                            type="text"
+                            id="optimizerType"
+                            name="optimizerType"
+                            placeholder="e.g. Adam, SGD, RMSprop"
+                            style="width: 100%;"
+                          />
+                        </div>
+                        <div>
+                          <label for="optimizerArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                          <textarea
+                            id="optimizerArgs"
+                            name="optimizerArgs"
+                            rows="4"
+                            placeholder='{"lr": 0.001, "weight_decay": 0.0001}'
+                            style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                          ></textarea>
+                          <p id="optimizerArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <div class="transform-section">
+                    <button type="button" class="transform-toggle" data-config="lrDecay">
+                      <span>Learning rate decay (optional)</span>
+                      <span class="toggle-icon">▶</span>
+                    </button>
+                    <div class="transform-content" id="lrDecayContent" hidden>
+                      <p class="field-help" style="margin-bottom: 0.8rem;">
+                        Optional learning rate decay configuration. Leave empty if not needed.
+                      </p>
+                      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>
+                          <label for="lrDecayType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                          <input
+                            type="text"
+                            id="lrDecayType"
+                            name="lrDecayType"
+                            placeholder="e.g. StepLR, ExponentialLR"
+                            style="width: 100%;"
+                          />
+                        </div>
+                        <div>
+                          <label for="lrDecayArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                          <textarea
+                            id="lrDecayArgs"
+                            name="lrDecayArgs"
+                            rows="4"
+                            placeholder='{"step_size": 30, "gamma": 0.1}'
+                            style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                          ></textarea>
+                          <p id="lrDecayArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <div class="transform-section">
+                    <button type="button" class="transform-toggle" data-config="lossFn">
+                      <span>Loss function</span>
+                      <span class="toggle-icon">▶</span>
+                    </button>
+                    <div class="transform-content" id="lossFnContent" hidden>
+                      <p class="field-help" style="margin-bottom: 0.8rem;">
+                        Configure the loss function type and its arguments as JSON.
+                      </p>
+                      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>
+                          <label for="lossFnType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                          <input
+                            type="text"
+                            id="lossFnType"
+                            name="lossFnType"
+                            placeholder="e.g. CrossEntropyLoss, MSELoss"
+                            style="width: 100%;"
+                          />
+                        </div>
+                        <div>
+                          <label for="lossFnArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                          <textarea
+                            id="lossFnArgs"
+                            name="lossFnArgs"
+                            rows="4"
+                            placeholder='{"reduction": "mean"}'
+                            style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                          ></textarea>
+                          <p id="lossFnArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label>Metrics</label>
+                  <p class="field-help">
+                    Metrics to track during training.
+                  </p>
+                  <select id="metricsSelect" class="transform-select">
+                    <option value="">Add metric...</option>
+                    <option value="Accuracy">Accuracy</option>
+                  </select>
+                  <div id="metricsList" class="transform-list" style="min-height: 50px; margin-top: 0.5rem;">
+                    <!-- Metrics will be added here -->
+                  </div>
+                </div>
+
+                <div class="form-actions" style="display: flex; justify-content: center; margin-top: 2rem;">
+                  <button type="submit" class="btn primary btn-large">
+                    Start training
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Training configuration preview (hidden by default) -->
+            <div class="form-card" id="trainingConfigCard" hidden>
+              <div class="card-header">
+                <div>
+                  <h2>Training configuration</h2>
+                  <p class="muted">
+                    This is the JSON configuration that will be sent to the backend.
+                  </p>
+                </div>
+                <button type="button" class="btn small secondary" id="toggleTrainingConfigBtnBack">
+                  Back to form
+                </button>
+              </div>
+              <pre id="trainingConfigPreview" class="code-preview">{}</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jobs Section -->
+        <div class="training-jobs-section">
+          <div class="form-card">
+            <div class="card-header">
+              <div>
+                <h2>Jobs</h2>
+                <p class="muted">
+                  List of dataset, model, and training jobs with their current status.
+                </p>
+              </div>
+            </div>
+            <div id="trainingJobsList" class="training-jobs-list">
+              <!-- Training jobs will be rendered here by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>AI Training Portal &middot; Train new model</p>
+      </div>
+    </footer>
+
+    <script src="train.js"></script>
+  </body>
+</html>
+
+

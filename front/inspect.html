@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inspect Existing Model · AI Training Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Wider section for inspect page */
+      .page-main .container {
+        max-width: 1400px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="sub-hero">
+      <div class="hero-inner">
+        <p class="back-link">
+          <a href="index.html">&larr; Back to main page</a>
+        </p>
+        <h1>Inspect Existing Model</h1>
+        <p class="hero-subtitle">
+          Inspect and analyze already trained AI models by selecting a run ID or browsing experiment history.
+        </p>
+      </div>
+    </header>
+
+    <main class="page-main">
+      <section class="section">
+        <div class="container">
+          <!-- Inspect Run Results Section -->
+          <div id="inspect-run-results" class="form-card" style="margin-bottom: 2rem; display: none;">
+            <div class="card-header">
+              <div>
+                <h2>Inspect Run Results</h2>
+                <p class="muted">
+                  Current status of the inspect run job.
+                </p>
+              </div>
+            </div>
+            <div id="inspectRunResultsContent" class="inspect-results-content">
+              <!-- Results will be displayed here -->
+            </div>
+          </div>
+
+          <!-- Post Processing (above Choose Run); shown only when inspect run succeeds -->
+          <div id="postProcessingCard" class="form-card" style="margin-bottom: 2rem; display: none;">
+            <div class="card-header">
+              <div>
+                <h2>Post Processing</h2>
+                <p class="muted">
+                  Choose and add post-processing methods. Drag to reorder. Send the configured pipeline to include the post processor.
+                </p>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="postProcessingMethodSelect">Add method</label>
+              <select id="postProcessingMethodSelect" class="transform-select">
+                <option value="">— Select method —</option>
+                <option value="global_threshold">Global Threshold</option>
+                <option value="calibration">Calibration</option>
+              </select>
+              <p class="field-help">Select a method to add it to the list.</p>
+            </div>
+            <div id="postProcessingList" class="transform-list post-processing-list" style="min-height: 2.5rem;">
+              <!-- Post-processing items rendered by JS -->
+            </div>
+            <div class="field-group" style="margin-top: 1rem;">
+              <label for="newRunName">New run name</label>
+              <input
+                type="text"
+                id="newRunName"
+                name="newRunName"
+                placeholder="e.g. run_with_postprocessing"
+              />
+              <p class="field-help">
+                Specify a name for the new run that will include the post-processing methods.
+              </p>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+              <button type="button" class="btn primary" id="sendPostProcessorBtn">Include post processor</button>
+            </div>
+          </div>
+
+          <!-- Fine Tuning (below Post Processing); shown only when job succeeds -->
+          <div id="fineTuningCard" class="form-card" style="margin-bottom: 2rem; display: none;">
+            <div class="card-header">
+              <div>
+                <h2>Fine Tuning</h2>
+                <p class="muted">
+                  Configure fine-tuning options for this run. Add transformations and specify a new run name.
+                </p>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="fineTuningRunName">New run name</label>
+              <input
+                type="text"
+                id="fineTuningRunName"
+                name="fineTuningRunName"
+                placeholder="e.g. run_fine_tuned"
+              />
+              <p class="field-help">
+                Specify a name for the new run that will include the fine-tuning transformations.
+              </p>
+            </div>
+            <div class="field-group">
+              <div class="field-header">
+                <div>
+                  <label>Transformations</label>
+                  <p class="field-help">Add transformations in the order they should be applied</p>
+                </div>
+              </div>
+              <select id="fineTuningTransformSelect" class="transform-select">
+                <option value="">Add transformation...</option>
+                <!-- Options will be populated dynamically by JavaScript -->
+              </select>
+              <div id="fineTuningTransformList" class="transform-list" style="min-height: 2.5rem; margin-top: 0.5rem;">
+                <!-- Transformations will be rendered here by JS -->
+              </div>
+            </div>
+
+            <div class="field-group inline" style="margin-top: 1.5rem;">
+              <div>
+                <label for="fineTuningUsePresetLayers">Use PyTorch layers</label>
+                <p class="field-help">
+                  When this is on, the backend will build layers using the PyTorch
+                  library instead of your custom layer classes. The custom layers
+                  list below will still describe the structure.
+                </p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="fineTuningUsePresetLayers" />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="field-group" id="fineTuningLayerEditorWrapper">
+              <div class="field-header">
+                <div>
+                  <label>Custom layers</label>
+                  <p class="field-help">
+                    Add the layers you want, in the order they should appear in the
+                    model.
+                  </p>
+                </div>
+                <button type="button" class="btn small primary" id="fineTuningAddLayerBtn">
+                  + Add layer
+                </button>
+              </div>
+
+              <div id="fineTuningLayersContainer" class="layers-container">
+                <!-- Layers will be inserted here by JavaScript -->
+              </div>
+            </div>
+
+            <div class="field-group" style="margin-top: 1.5rem;">
+              <label>Training Parameters</label>
+              <p class="field-help">
+                Configure training parameters for fine-tuning.
+              </p>
+            </div>
+
+            <div class="field-group">
+              <label for="fineTuningEpochs">Epochs</label>
+              <input
+                type="number"
+                id="fineTuningEpochs"
+                name="fineTuningEpochs"
+                min="1"
+                value="10"
+                placeholder="10"
+              />
+              <p class="field-help">
+                Number of training epochs.
+              </p>
+            </div>
+
+            <div class="field-group">
+              <label for="fineTuningNumOfIters">Number of iterations</label>
+              <input
+                type="number"
+                id="fineTuningNumOfIters"
+                name="fineTuningNumOfIters"
+                min="1"
+                value="100"
+                placeholder="100"
+              />
+              <p class="field-help">
+                Number of training iterations per epoch.
+              </p>
+            </div>
+
+            <div class="field-group">
+              <div class="transform-section">
+                <button type="button" class="transform-toggle" data-config="fineTuningOptimizer">
+                  <span>Optimizer</span>
+                  <span class="toggle-icon">▶</span>
+                </button>
+                <div class="transform-content" id="fineTuningOptimizerContent" hidden>
+                  <p class="field-help" style="margin-bottom: 0.8rem;">
+                    Configure the optimizer type and its arguments as JSON.
+                  </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div>
+                      <label for="fineTuningOptimizerType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                      <input
+                        type="text"
+                        id="fineTuningOptimizerType"
+                        name="fineTuningOptimizerType"
+                        placeholder="e.g. Adam, SGD, RMSprop"
+                        style="width: 100%;"
+                      />
+                    </div>
+                    <div>
+                      <label for="fineTuningOptimizerArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                      <textarea
+                        id="fineTuningOptimizerArgs"
+                        name="fineTuningOptimizerArgs"
+                        rows="4"
+                        placeholder='{"lr": 0.001, "weight_decay": 0.0001}'
+                        style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                      ></textarea>
+                      <p id="fineTuningOptimizerArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="transform-section">
+                <button type="button" class="transform-toggle" data-config="fineTuningLrDecay">
+                  <span>Learning rate decay (optional)</span>
+                  <span class="toggle-icon">▶</span>
+                </button>
+                <div class="transform-content" id="fineTuningLrDecayContent" hidden>
+                  <p class="field-help" style="margin-bottom: 0.8rem;">
+                    Optional learning rate decay configuration. Leave empty if not needed.
+                  </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div>
+                      <label for="fineTuningLrDecayType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                      <input
+                        type="text"
+                        id="fineTuningLrDecayType"
+                        name="fineTuningLrDecayType"
+                        placeholder="e.g. StepLR, ExponentialLR"
+                        style="width: 100%;"
+                      />
+                    </div>
+                    <div>
+                      <label for="fineTuningLrDecayArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                      <textarea
+                        id="fineTuningLrDecayArgs"
+                        name="fineTuningLrDecayArgs"
+                        rows="4"
+                        placeholder='{"step_size": 30, "gamma": 0.1}'
+                        style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                      ></textarea>
+                      <p id="fineTuningLrDecayArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="transform-section">
+                <button type="button" class="transform-toggle" data-config="fineTuningLossFn">
+                  <span>Loss function</span>
+                  <span class="toggle-icon">▶</span>
+                </button>
+                <div class="transform-content" id="fineTuningLossFnContent" hidden>
+                  <p class="field-help" style="margin-bottom: 0.8rem;">
+                    Configure the loss function type and its arguments as JSON.
+                  </p>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div>
+                      <label for="fineTuningLossFnType" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Type</label>
+                      <input
+                        type="text"
+                        id="fineTuningLossFnType"
+                        name="fineTuningLossFnType"
+                        placeholder="e.g. CrossEntropyLoss, MSELoss"
+                        style="width: 100%;"
+                      />
+                    </div>
+                    <div>
+                      <label for="fineTuningLossFnArgs" style="display: block; margin-bottom: 0.3rem; font-size: 0.9rem;">Arguments (JSON)</label>
+                      <textarea
+                        id="fineTuningLossFnArgs"
+                        name="fineTuningLossFnArgs"
+                        rows="4"
+                        placeholder='{"reduction": "mean"}'
+                        style="width: 100%; font-family: monospace; font-size: 0.85rem;"
+                      ></textarea>
+                      <p id="fineTuningLossFnArgsError" class="field-help" style="color: #ef4444; display: none;"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 1rem;">
+              <button type="button" class="btn primary" id="sendFineTuningBtn">Start fine tuning</button>
+            </div>
+          </div>
+
+          <!-- First section: Choose Run -->
+          <div class="form-card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <div>
+                <h2>Choose Run</h2>
+                <p class="muted">
+                  Enter a run ID to inspect a specific model run.
+                </p>
+              </div>
+            </div>
+
+            <form id="inspect-run-form">
+              <div class="field-group">
+                <label for="runId">Run ID</label>
+                <input
+                  type="text"
+                  id="runId"
+                  name="runId"
+                  placeholder="e.g. run_001"
+                />
+                <p class="field-help">
+                  Enter the ID of the run you want to inspect.
+                </p>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn primary">
+                  Inspect Run
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Second section: Experiment History -->
+          <div class="form-card">
+            <div class="card-header">
+              <div>
+                <h2>Experiment History</h2>
+                <p class="muted">
+                  Browse and select from a list of available experiments.
+                </p>
+              </div>
+            </div>
+
+            <div id="experimentsList" class="experiments-list">
+              <!-- Experiments will be rendered here by JavaScript -->
+              <p class="muted">No experiments available yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>AI Training Portal &middot; Inspect existing model</p>
+      </div>
+    </footer>
+
+    <script src="inspect.js"></script>
+  </body>
+</html>
