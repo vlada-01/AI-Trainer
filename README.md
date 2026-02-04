@@ -14,6 +14,8 @@ To run this project locally:
 - NVIDIA Drivers  
 - NVIDIA Container Toolkit  
 
+**How to Start the System** - docker compose up -d --build (Open the http://localhost:3000 in the browser)
+
 ---
 
 ## Key Features
