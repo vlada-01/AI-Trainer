@@ -4,6 +4,8 @@ A configuration-driven AI training platform that orchestrates the full machine l
 
 The goal of this project is to simulate a **production-grade MLOps system** where ML experiments are fully reproducible and defined via structured configuration files, without hardcoded pipelines.
 
+Note: The front is AI generated
+
 ## Requirements
 
 To run this project locally:
