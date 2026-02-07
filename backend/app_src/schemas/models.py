@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Union, Tuple, Optional, List, Any
 
-from model_src.models.model_builder import AvailableModels
+from model_src.models.model_builder import AvailableForwardTypes
 from model_src.models.layers.layer_factory import AvailableLayers
 
 #----------------------------------
@@ -50,7 +50,10 @@ Layers = List[Union[
     ]]
 
 class ModelJobRequest(BaseModel):
-    model_type: str #TODO: needs to be updated based on the AvailableModels, currently there is only one model called Net
+    forward_type: Union[
+        Literal[AvailableForwardTypes.default],
+        Literal[AvailableForwardTypes.dict]
+    ] 
     use_torch_layers: Optional[bool] = False
     layers: Layers
 

@@ -30,7 +30,6 @@ def build_post_processor(pp_cfg):
         log.info(f'Adding {type(pp).__name__} in Post Processor')
         pp_list.append(pp)
         
-
     return PostProcessor(pp_cfg, pp_list, pp_names)
 
 # TODO: maybe it is better to add mechanism if some required post-process is missing
@@ -46,6 +45,7 @@ class PostProcessor():
         return self.pp_cfg
 
     def train(self, model, dl, device):
+        model.set_pp(None)
         for p in model.parameters():
             p.requires_grad = False
         result = {}
@@ -97,12 +97,15 @@ class Calibration():
 
         for _ in range(3):
             for X, y, _ in dl:
-                X = X.to(device)
+                if isinstance(X, dict):
+                    X = {k: v.to(device) for k, v in X.items()}
+                else:
+                    X = X.to(device)
                 y = y.to(device)
 
-                preds = model(X)
+                logits = model(X)
 
-                loss = loss_fn(preds / T, y)
+                loss = loss_fn(logits / T, y)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -122,8 +125,8 @@ class Calibration():
         log.info(f'Learned temperature: {self.T}')
         return AvailablePostProcessors.calibration, {'T': self.T}
 
-    def process(self, preds, pred_classes):
-        probs = torch.softmax(preds / self.T, dim=1)
+    def process(self, logits, pred_classes):
+        probs = torch.softmax(logits / self.T, dim=1)
         conf, pred_classes = torch.max(probs, dim=1)
         return conf, pred_classes
     
@@ -147,10 +150,13 @@ class GlobalThreshold():
         model.eval()
         with torch.no_grad():
             for X, y, _ in dl:
-                X = X.to(device)
+                if isinstance(X, dict):
+                    X = {k: v.to(device) for k, v in X.items()}
+                else:
+                    X = X.to(device)
                 y = y.to(device)
-                preds = model(X)
-                preds = preds / T
+                logits = model(X)
+                preds = logits / T
                 
                 probs = torch.softmax(preds, dim=1)
                 conf = probs.max(dim=1).values

@@ -4,25 +4,22 @@ from enum import Enum
 class MetaTypes(str, Enum):
     tabular = 'tabular'
     image = 'image'
+    textual = 'textual'
 
 class MetaData(ABC):
-    def __init__(self, modality, extras=None, train_sample=None, val_sample=None, test_sample=None):
+    def __init__(self, modality):
         self.modality = modality
-        self.extras = extras
-        self.train_sample = train_sample
-        self.val_sample = val_sample
-        self.test_sample = test_sample
+
+    @abstractmethod
+    def update(self, upd_dict):
+        pass
 
     @abstractmethod
     def resolve(self, name):
         pass
 
-    # @abstractmethod
-    # def add_sample_info(self):
-    #     pass
-
     @abstractmethod
-    def get_sample_sizes(self):
+    def get_sample_size(self):
         pass
 
     @abstractmethod

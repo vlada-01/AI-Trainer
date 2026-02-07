@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 
 from model_src.models.post_processor import UNKNOWN_CLASS
 
+# TODO: there is a problem with coverage not showing
+# TODO: implement avg, weighted ... for show_metrics
 
 # TODO: implement all classes from the enum
 class AvailableMetrics(str, Enum):
@@ -31,7 +33,7 @@ def prepare_metrics(cfg_metrics, meta):
         metric_cls = getattr(module, metric, None)
 
         if metric_cls is None:
-            raise ValueError(f'{module} does not support callable {metric}')
+            raise ValueError(f'{module} does not support metric {metric}')
 
         metrics.append(metric_cls(meta))
     return metrics
@@ -40,9 +42,9 @@ def reset_metrics(metrics):
     for metric in metrics:
         metric.reset()
 
-def update_metrics(metrics, preds, targets, post_processor=None):
+def update_metrics(metrics, preds, targets):
     for metric in metrics:
-        metric.update(preds, targets, post_processor)
+        metric.update(preds, targets)
 
 def show_results(metrics):
     results = []
@@ -76,15 +78,12 @@ class Accuracy(Metric):
         self.scored = 0
         self.ds_size = 0
     
-    def update(self, preds, targets, post_processor):
+    def update(self, preds, targets):
+        unknown_cls_mask = preds == UNKNOWN_CLASS
+        preds = preds[~unknown_cls_mask]
+        targets = targets[~unknown_cls_mask]
+
         self.ds_size += preds.size(0)
-        if post_processor is not None:
-            preds = post_processor.post_process(preds)
-            unknown_cls_mask = preds == UNKNOWN_CLASS
-            preds = preds[~unknown_cls_mask]
-            targets = targets[~unknown_cls_mask]
-        else:
-            preds = preds.argmax(1)
         self.scored += (preds == targets).type(torch.float).sum().item()
 
     def show(self):
@@ -104,15 +103,10 @@ class Precision(Metric):
         self.tps = torch.zeros(self.N, dtype=torch.float)
         self.fps = torch.zeros(self.N, dtype=torch.float)
 
-    def update(self, preds, targets, post_processor):
-        if post_processor is not None:
-            preds = post_processor.post_process(preds)
-            unknown_cls_mask = preds == UNKNOWN_CLASS
-            preds = preds[~unknown_cls_mask]
-            targets = targets[~unknown_cls_mask]
-        else:
-            preds = preds.argmax(1)
-        
+    def update(self, preds, targets):
+        unknown_cls_mask = preds == UNKNOWN_CLASS
+        preds = preds[~unknown_cls_mask]
+        targets = targets[~unknown_cls_mask]
         correct = (preds == targets)
 
         tps = torch.bincount(preds[correct], minlength=self.N)
@@ -122,9 +116,8 @@ class Precision(Metric):
         self.fps += fps.cpu().type(torch.float)
 
     def show(self):
-        if self.method == 'avg':
-            precisions = self.tps / (self.tps + self.fps).clamp_min(1)
-            return self.name, 1 / self.N * torch.sum(precisions)
+        precisions = self.tps / (self.tps + self.fps).clamp_min(1)
+        return self.name, 1 / self.N * torch.sum(precisions)
         
 class  Recall(Metric):
     def __init__(self, meta):
@@ -138,15 +131,10 @@ class  Recall(Metric):
         self.tps = torch.zeros(self.N, dtype=torch.float)
         self.fns = torch.zeros(self.N, dtype=torch.float)
     
-    def update(self, preds , targets, post_processor):
-        if post_processor is not None:
-            preds = post_processor.post_process(preds)
-            unknown_cls_mask = preds == UNKNOWN_CLASS
-            preds = preds[~unknown_cls_mask]
-            targets = targets[~unknown_cls_mask]
-        else:
-            preds = preds.argmax(1)
-
+    def update(self, preds , targets):
+        unknown_cls_mask = preds == UNKNOWN_CLASS
+        preds = preds[~unknown_cls_mask]
+        targets = targets[~unknown_cls_mask]
         correct = (preds == targets)
 
         tps = torch.bincount(preds[correct], minlength=self.N)
@@ -174,15 +162,10 @@ class F1Score(Metric):
         self.fps = torch.zeros(self.N, dtype=torch.float)
         self.fns = torch.zeros(self.N, dtype=torch.float)
 
-    def update(self, preds, targets, post_processor):
-        if post_processor is not None:
-            preds = post_processor.post_process(preds)
-            unknown_cls_mask = preds == UNKNOWN_CLASS
-            preds = preds[~unknown_cls_mask]
-            targets = targets[~unknown_cls_mask]
-        else:
-            preds = preds.argmax(1)
-
+    def update(self, preds, targets):
+        unknown_cls_mask = preds == UNKNOWN_CLASS
+        preds = preds[~unknown_cls_mask]
+        targets = targets[~unknown_cls_mask]
         correct = (preds == targets)
 
         tps = torch.bincount(preds[correct], minlength=self.N)

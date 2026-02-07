@@ -26,7 +26,7 @@ class AppContext:
     cleanup_task: Optional[asyncio.Task] = None
 
     # run time objects
-    model: Any = None
+    predictor: Any = None
     train: Optional[DataLoader] = None
     val: Optional[DataLoader] = None
     test: Optional[DataLoader] = None
@@ -34,8 +34,8 @@ class AppContext:
 
     # cache
     cached_model_cfg: Optional[ModelJobRequest] = None
+    cached_pp_cfg: Optional[PostProcessingJobRequest] = None
     cached_dl_cfg: Optional[DatasetJobRequest] = None
     cached_train_cfg: Optional[TrainJobRequest] = None
-    cached_pp_cfg: Optional[PostProcessingJobRequest] = None
     cached_run_id: Optional[str] = None
     

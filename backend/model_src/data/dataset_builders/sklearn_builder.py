@@ -4,9 +4,9 @@ import sklearn.datasets as datasets
 import numpy as np
 
 from model_src.data.metas.meta import MetaTypes
-from model_src.data.metas.utils import create_meta
+from model_src.data.metas.utils import create_meta, update_meta
 
-from model_src.data.transforms import compose_transforms
+from model_src.data.transforms import assemble_transforms
 
 from common.logger import get_logger
 
@@ -18,37 +18,27 @@ class SklearnDataBuilder():
         self.cfg_dataset_transforms = cfg_dataset_transforms
 
         log.info('Loading raw data')
-        X, y, meta = self.load_data(cfg)
-        log.debug(f'Creating TabularMetaDta for meta: {meta}')
-        self.meta = create_meta(MetaTypes.tabular, task=cfg.task, **meta)
+        X, y, meta_dict = self.load_data(cfg)
+        log.info(f'Initializing the {cfg.meta_type.value} type')
+
+        self.meta = create_meta(MetaTypes.tabular)
+
+        upd_dict = {
+            'set_task': cfg.task,
+            **meta_dict
+        }
+        update_meta(self.meta, upd_dict)
 
         log.info('Splitting data')
         X_train, X_val, X_test, y_train, y_val, y_test = self.get_splits(X, y)
 
         log.info('Assembling dataset transformations')
-        train_t, train_tt, val_t, val_tt, test_t, test_tt = self.assemble_transforms()
+        train_t, train_tt, val_t, val_tt, test_t, test_tt = assemble_transforms(self.cfg_dataset_transforms, self.meta)
 
         log.info('Initializing Datasets')
         self.train_ds = SklearnDataset(X_train, y_train, transform=train_t, target_transform=train_tt)
         self.val_ds = SklearnDataset(X_val, y_val, transform=val_t, target_transform=val_tt)
         self.test_ds = SklearnDataset(X_test, y_test, transform=test_t, target_transform=test_tt)  if X_test is not None else None
-        
-        # tr_x, tr_y = self.train_ds[0]
-        # val_x, val_y = self.val_ds[0]
-        # test_x, test_y = self.test_ds[0] if self.test_ds is not None else (None, None)
-        # train_sample = {
-        #     'X': tr_x,
-        #     'y': tr_y
-        # }
-        # val_sample = {
-        #     'X': val_x,
-        #     'y': val_y
-        # }
-        # test_sample = {
-        #     'X': test_x,
-        #     'y': test_y
-        # }
-        # self.meta.add_sample_info(train_sample, val_sample, test_sample)
 
     def get_train(self):
         return self.train_ds
@@ -78,8 +68,9 @@ class SklearnDataBuilder():
             y = data.target.to_numpy(dtype=np.long)
         else:
             y = data.target.to_numpy(dtype=np.float32)
-        meta = self.extract_metadata(data)
-        return X, y, meta
+            
+        meta_dict = self.extract_metadata(data)
+        return X, y, meta_dict
     
     def extract_metadata(self, data):
         descr = data.data.describe()
@@ -89,16 +80,14 @@ class SklearnDataBuilder():
         max = descr.loc["max"].to_numpy()
         unique_targets = np.unique(data.target.to_numpy()).size
         rows_features_size = data.data.to_numpy().shape
-        size = rows_features_size[0]
-        features = rows_features_size[1]
+        num_features = rows_features_size[1]
         return {
-            "size": size,
-            "features": features,
-            "unique_targets": unique_targets,
-            "mean": mean,
-            "std": std,
-            "min": min,
-            "max": max,
+            "set_num_features": num_features,
+            "set_unique_targets": unique_targets,
+            "set_mean": mean,
+            "set_std": std,
+            "set_min": min,
+            "set_max": max,
         }
     
     def get_splits(self, X, y):
@@ -111,34 +100,6 @@ class SklearnDataBuilder():
         X_train, X_val, y_train, y_val = train_test_split(X_tmp, y_tmp, test_size=val, stratify=stratify, shuffle=True)
         return X_train, X_val, X_test, y_train, y_val, y_test
 
-    def assemble_transforms(self):
-        train_t, train_tt = None, None
-        val_t, val_tt = None, None
-        test_t, test_tt = None, None
-
-        cfg = self.cfg_dataset_transforms
-        if cfg is not None:
-            t_cfg = cfg.train.transform
-            tt_cfg = cfg.train.target_transform
-            log.info('Composing train transforms')
-            train_t = compose_transforms(t_cfg, self.meta)
-            log.info('Composing train target transforms')
-            train_tt = compose_transforms(tt_cfg, self.meta)
-
-            t_cfg = cfg.valid.transform 
-            tt_cfg = cfg.valid.target_transform
-            log.info('Composing val transforms') 
-            val_t = compose_transforms(t_cfg, self.meta)
-            log.info('Composing val target transforms')
-            val_tt = compose_transforms(tt_cfg, self.meta)
-
-            t_cfg = cfg.test.transform if cfg.test is not None else None
-            tt_cfg = cfg.test.target_transform if cfg.test is not None else None
-            log.info('Composing test transforms') 
-            test_t = compose_transforms(t_cfg, self.meta)
-            log.info('Composing test target transforms') 
-            test_tt = compose_transforms(tt_cfg, self.meta)
-        return train_t, train_tt, val_t, val_tt, test_t, test_tt
 
 class SklearnDataset(Dataset):
     def __init__(self, X, target, transform, target_transform):

@@ -1,5 +1,3 @@
-# from __future__ import annotations
-
 import asyncio
 import traceback
 from uuid import uuid4
@@ -47,7 +45,7 @@ async def run_prepare_dataset(ctx: AppContext, job_id: str, cfg: DatasetJobReque
 
         details = {
             'task': result['meta'].get_task(),
-            'sample_sizes': result['meta'].get_sample_sizes()
+            'sample_size': result['meta'].get_sample_size()
         }
         await update_job(
             ctx,

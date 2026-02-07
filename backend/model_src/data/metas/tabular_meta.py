@@ -1,16 +1,36 @@
 from model_src.data.metas.meta import MetaData, MetaTypes
 
+from common.logger import get_logger
+
+log = get_logger(__name__)
+
 class TabularMetaData(MetaData):
-    def __init__(self, size, features, unique_targets, mean, std, min, max, task, extras=None, tr_sample=None, val_sample=None, test_sample=None):
-        super().__init__(MetaTypes.tabular, extras, tr_sample, val_sample, test_sample)
-        self.size = size
-        self.features = features
-        self.unique_targets = unique_targets
-        self.mean = mean
-        self.std = std
-        self.min = min
-        self.max = max
-        self.task = task
+    def __init__(self):
+        super().__init__(MetaTypes.tabular)
+        self.num_features = None
+        self.unique_targets = None
+        self.mean = None
+        self.std = None
+        self.min = None
+        self.max = None
+        self.task = None
+
+    def update(self, upd_dict):
+        for k, v in upd_dict.items():
+            if hasattr(self, k):
+                if callable(getattr(self, k)):
+                    log.info(f'Calling TabularMetaData attr {k}')
+                    fn = getattr(self, k)
+                    if isinstance(v, dict):
+                        fn(**v)
+                    elif isinstance(v, (list, tuple)):
+                        fn(*v)
+                    else:
+                        fn(v)
+                else:
+                    raise ValueError(f'TabularMetaData does not have callable {k}')
+            else:
+                log.warning(f'TabularMetaData does not have attr {k}')
 
     def resolve(self, name):
         fn = getattr(self, f'resolve_{name.value}', None)
@@ -18,17 +38,10 @@ class TabularMetaData(MetaData):
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
     
-    # def add_sample_info(self, tr, val, test):
-    #     self.train_sample = tr
-    #     self.val_sample = val
-    #     self.test_sample = test
-    
-    def get_sample_sizes(self):
+    def get_sample_size(self):
         return {
-            'sample': self.get_sample_size(),
-            # 'train_sample': self.get_sample_size(self.train_sample),
-            # 'val_sample': self.get_sample_size(self.val_sample),
-            # 'test_sample': self.get_sample_size(self.test_sample)
+            'input_size': self.num_features,
+            'output_size': self.unique_targets if self.task == 'classification' else 1
         }
     
     def get_task(self):
@@ -37,12 +50,11 @@ class TabularMetaData(MetaData):
     def get_unique_targets(self):
         return self.unique_targets
     
+    # TODO: when adding support for the hf tabular, this needs to be updated self.mean.tolist(),
     def to_dict(self):
         return {
             'modality': self.modality,
-            'extras': self.extras,
-            'size': self.size,
-            'features': self.features,
+            'num_features': self.num_features,
             'unique_targets': self.unique_targets,
             'mean': self.mean.tolist(),
             'std': self.std.tolist(),
@@ -51,14 +63,6 @@ class TabularMetaData(MetaData):
             'task': self.task,
         }
     
-    def get_sample_size(self):
-        # if sample is None:
-        #     return None 
-        
-        return {
-            'input_size': self.features,
-            'output_size': self.unique_targets if self.task == 'classification' else 1
-        }
     # ---------------------- Resolvers ----------------------
 
     def resolve_normalize_mean_std(self):
@@ -75,3 +79,26 @@ class TabularMetaData(MetaData):
     
     def resolve_to_tensor(self):
         return {}
+    
+    # ---------------------- Internal -----------------------
+
+    def set_num_features(self, num_features):
+        self.num_features = num_features
+    
+    def set_unique_targets(self, unique_targets):
+        self.unique_targets = unique_targets
+
+    def set_mean(self, mean):
+        self.mean = mean
+
+    def set_std(self, std):
+        self.std = std
+
+    def set_min(self, min):
+        self.min = min
+
+    def set_max(self, max):
+        self.max = max
+
+    def set_task(self, task):
+        self.task = task

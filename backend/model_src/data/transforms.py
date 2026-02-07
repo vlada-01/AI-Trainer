@@ -24,6 +24,39 @@ def build_normalize_min_max(params):
 def build_img_to_tensor(params):
     return T.ToTensor()
 
+# TODO: problem if the following transformations exist. No idea how they should be resolved for dict
+def build_text_to_tensor(params):
+    tokenizer = params['tokenizer']
+    vocab = params['vocab']
+    attn_mask = params['attention_mask']
+    
+    def tokenize_data(text):
+        tokens = ['<sos>']
+        for tokenized in tokenizer.findall(text):
+            if len(tokens) == attn_mask - 2:
+                break
+            tokens.append(tokenized)
+        tokens.append('<eos>')
+        
+        numericalized = []
+        for token in tokens:
+            if token in vocab:
+                numericalized.append(vocab[token])
+            else:
+                numericalized.append(vocab['<unk>'])
+        
+        tenzorized = torch.tensor(numericalized)
+        ones = torch.ones(len(tenzorized))
+        zeros = torch.tensor([0] * (attn_mask - len(tenzorized)))
+        mask = torch.cat(ones, zeros)
+        padded = torch.tensor([vocab['<pad>'] * (attn_mask - len(tenzorized))])
+        return {
+            'input_ids': torch.cat(tenzorized, padded),
+            'attention_mask': mask
+        }
+
+    return T.Lambda(lambda x: tokenize_data(x))
+
 def build_to_tensor(params):
     return T.Lambda(lambda x: torch.as_tensor(x))
 
@@ -49,6 +82,7 @@ class AvailableTransforms(str, Enum):
     random_horizontal_flip = 'random_horizontal_flip'
     random_rotation = 'random_rotation'
     random_vertical_flip = 'random_vertical_flip'
+    text_to_tensor = 'text_to_tensor'
     to_tensor = 'to_tensor'
 
 REGISTRY_TRANSFORMS_MAP = {
@@ -59,9 +93,39 @@ REGISTRY_TRANSFORMS_MAP = {
     AvailableTransforms.random_rotation: build_random_rotation,
     AvailableTransforms.random_vertical_flip: build_random_vertical_flip,
     AvailableTransforms.img_to_tensor: build_img_to_tensor,
-    AvailableTransforms.to_tensor: build_to_tensor
+    AvailableTransforms.to_tensor: build_to_tensor,
+    AvailableTransforms.text_to_tensor: build_text_to_tensor
     # TODO need to support some torchvision transformations
 }
+
+def assemble_transforms(cfg_dataset_transforms, meta):
+    train_t, train_tt = None, None
+    val_t, val_tt = None, None
+    test_t, test_tt = None, None
+
+    cfg = cfg_dataset_transforms
+    if cfg is not None:
+        t_cfg = cfg.train.transform
+        tt_cfg = cfg.train.target_transform
+        log.info('Composing train transforms')
+        train_t = compose_transforms(t_cfg, meta)
+        log.info('Composing train target transforms')
+        train_tt = compose_transforms(tt_cfg, meta)
+
+        t_cfg = cfg.valid.transform 
+        tt_cfg = cfg.valid.target_transform
+        log.info('Composing val transforms') 
+        val_t = compose_transforms(t_cfg, meta)
+        log.info('Composing val target transforms')
+        val_tt = compose_transforms(tt_cfg, meta)
+
+        t_cfg = cfg.test.transform if cfg.test is not None else None
+        tt_cfg = cfg.test.target_transform if cfg.test is not None else None
+        log.info('Composing test transforms') 
+        test_t = compose_transforms(t_cfg, meta)
+        log.info('Composing test target transforms') 
+        test_tt = compose_transforms(tt_cfg, meta)
+    return train_t, train_tt, val_t, val_tt, test_t, test_tt
 
 def compose_transforms(cfg, meta):
     if cfg is None:

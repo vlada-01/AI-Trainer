@@ -15,7 +15,6 @@ class Probability(BaseModel):
 class Rotation(BaseModel):
     alpha: int
 
-# TODO: add more transform possibilities later
 class TransformStep(BaseModel):
     name: Literal[
          AvailableTransforms.normalize_l1_l2,
@@ -25,17 +24,16 @@ class TransformStep(BaseModel):
         AvailableTransforms.random_rotation,
         AvailableTransforms.random_vertical_flip,
         AvailableTransforms.img_to_tensor,
+        AvailableTransforms.text_to_tensor,
         AvailableTransforms.to_tensor
     ]
     value: Union[bool, L1L2Norm, Probability, Rotation]
-    # TODO: extend these with transformations for the torchvision
 
 class TargetTargetTransformStep(BaseModel):
     name: Literal[
         AvailableTransforms.to_tensor
     ]
     value: Union[bool]
-     # TODO: extend these with transformations for the torchvision
 
 class TransformConfig(BaseModel):
     transform: List[TransformStep]
@@ -68,7 +66,6 @@ class SimpleMapper(BaseModel):
     x_mapping: str
     y_mapping: str
 
-# TODO: update config in the front
 class HuggingFaceConfig(BaseModel):
     dataset_provider: Literal[AvailableProviders.hf]
     id: str
@@ -76,7 +73,8 @@ class HuggingFaceConfig(BaseModel):
     task: Union[Literal['classification', 'regression']]
     meta_type: Union[
         Literal[MetaTypes.tabular],
-        Literal[MetaTypes.image]
+        Literal[MetaTypes.image],
+        Literal[MetaTypes.textual]
         ]
     train_split: str
     val_split: str

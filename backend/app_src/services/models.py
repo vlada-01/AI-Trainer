@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from app_src.app_ctx import AppContext
 from app_src.schemas.models import ModelJobRequest, ModelJobResponse, ErrorInfo
 
-from app_src.utils.models import prepare_model
+from app_src.utils.models import prepare_predictor
 
 from common.logger import get_logger
 
@@ -36,9 +36,9 @@ async def get_job(ctx: AppContext, job_id: str) -> ModelJobResponse | None:
 async def run_prepare_model(ctx: AppContext, job_id: str, cfg: ModelJobRequest) -> None:
     await update_job(ctx, job_id, status='in_progress')
     try:
-        result = await asyncio.to_thread(prepare_model, cfg)
+        result = await asyncio.to_thread(prepare_predictor, cfg)
         async with ctx.jobs_lock:
-            ctx.model = result['model']
+            ctx.predictor = result['predictor']
             ctx.cached_model_cfg = result['cfg']
 
         await update_job(

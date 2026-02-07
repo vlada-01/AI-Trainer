@@ -9,7 +9,7 @@ mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI")
 
 import model_src.train
 from model_src.data.dataset_builders.builder import build_data, update_train_data, update_dl_cfg
-from model_src.models.model_builder import build_model, prepare_fine_tune_model, update_model_cfg
+from model_src.models.model_builder import prepare_fine_tune_model, update_model_cfg, build_predictor
 from model_src.models.post_processor import build_post_processor
 
 from model_src.eval import evaluate
@@ -23,11 +23,9 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-# TODO: later needs to be updated to support app.state.meta
 # TODO: should enable user to load the cfg based on the history run
-# TODO: when the dataset is prepared, user needs to be aware of input and output sizes of the model
-def train_model(model, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg):
-    if model is None or train is None:
+def train_model(predictor, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg):
+    if predictor is None or train is None:
         log.error('Model training can\'t be initalized')
         raise AssertionError(f'Model and Dataset need to be prepared first')
     
@@ -38,9 +36,9 @@ def train_model(model, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg):
     mlflow.set_experiment(exp_name)
 
     run_name = cfg.run_name
-    with mlflow.start_run(run_name=run_name):    
-        model = model_src.train.train_model(model, train, val, meta, cfg)
-        store_artifacts(model, meta, dl_cfg, model_cfg, cfg)
+    with mlflow.start_run(run_name=run_name):
+        predictor = model_src.train.train_model(predictor, train, val, meta, cfg)
+        store_artifacts(predictor.get_model(), meta, dl_cfg, model_cfg, cfg)
     mlflow.end_run()
 
 def inspect_run(client, data):
@@ -48,20 +46,15 @@ def inspect_run(client, data):
 
     data = retrieve_logged_artficats(client, run_id)
 
-    # TODO: make meta be used later on
     train_dl, val_dl, test_dl, meta = build_data(DatasetJobRequest(**data['dataset_cfg']))
     model_cfg = ModelJobRequest(**data['model_cfg'])
-    model = build_model(model_cfg)
-    model.load_state_dict(data['model_state_data'])
+    pp_cfg = PostProcessingJobRequest(**data['pp_cfg']) if data['pp_cfg'] is not None else None
+    predictor = build_predictor(model_cfg, pp_cfg)
+    predictor.get_model().load_state_dict(data['model_state_data'])
     log.info(f"train_cfg: {data['train_cfg']}")
-    train_params = prepare_train_params(model.parameters(), meta, TrainJobRequest(**data['train_cfg']).train_cfg)
+    train_params = prepare_train_params(predictor.get_model_parameters(), meta, TrainJobRequest(**data['train_cfg']).train_cfg)
 
-    if data['pp_cfg'] is not None:
-        post_processor = build_post_processor(PostProcessingJobRequest(**data['pp_cfg']))
-    else:
-        post_processor = None
-
-    test_metrics, dict_error_analysis = evaluate(model, val_dl, train_params, collect_error_analysis=True, post_processor=post_processor)
+    test_metrics, dict_error_analysis = evaluate(predictor, val_dl, train_params, collect_error_analysis=True)
     
     result = {
         'val_metrics': dict(test_metrics),
@@ -73,7 +66,7 @@ def inspect_run(client, data):
     result['layer_cfg'] = model_cfg.model_dump(exclude={'model_type'})
                                                
     ctx_dict = {
-        'model': model,
+        'predictor': predictor,
         'train': train_dl,
         'val': val_dl,
         'test': test_dl,
@@ -81,34 +74,35 @@ def inspect_run(client, data):
         'cached_dl_cfg': DatasetJobRequest(**data['dataset_cfg']),
         'cached_model_cfg': model_cfg,
         'cached_train_cfg': TrainJobRequest(**data['train_cfg']),
-        'cached_pp_cfg': PostProcessingJobRequest(**data['pp_cfg']) if data['pp_cfg'] is not None else None,
+        'cached_pp_cfg': pp_cfg,
         'cached_run_id': run_id,
     }
     return result, ctx_dict
 
-def post_process(model, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, run_id):
-    if model is None or val_dl is None:
+def post_process(predictor, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, run_id):
+    if predictor is None or val_dl is None:
         log.error('Post Processing can\'t be initalized')
         raise AssertionError(f'Model and Dataset need to be prepared first')
     log.info('Initializing post processing')
     
-    train_params = prepare_train_params(model.parameters(), meta, train_cfg.train_cfg)
+    train_params = prepare_train_params(predictor.get_model_parameters(), meta, train_cfg.train_cfg)
     device = train_params.device
 
     log.info('Preparing Post Processor')
-    post_processor = build_post_processor(pp_cfg)
-    
+    pp = build_post_processor(pp_cfg)
     log.info('Training Post Processor parameters')
-    post_processor.train(copy.deepcopy(model), val_dl, device)
-    updated_pp_cfg = post_processor.get_cfg()
+    pp.train(copy.deepcopy(predictor.get_model()), val_dl, device)
+    predictor.set_pp(pp)
 
+    updated_pp_cfg = predictor.get_pp().get_cfg()
+    
     exp_name = train_cfg.exp_name
     log.info(f'Setting experiment: {exp_name}')
     mlflow.set_experiment(exp_name)
     with mlflow.start_run(run_name=pp_cfg.new_run_name):
-        val_metrics, dict_error_analysis = evaluate(model, val_dl, train_params, collect_error_analysis=True, post_processor=post_processor)
+        val_metrics, dict_error_analysis = evaluate(predictor, val_dl, train_params, collect_error_analysis=True)
         mlflow.log_metrics({f'val_{name.lower()}': metric_val for name, metric_val in val_metrics})
-        store_artifacts(model, meta, dl_cfg, model_cfg, train_cfg, updated_pp_cfg)
+        store_artifacts(predictor.get_model(), meta, dl_cfg, model_cfg, train_cfg, updated_pp_cfg)
         exp_id = mlflow.active_run().info.experiment_id
         updated_run_id = mlflow.active_run().info.run_id
         parent_url = f'{mlflow_public_uri}/#/experiments/{exp_id}/runs/{run_id}'
@@ -132,14 +126,14 @@ def post_process(model, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, run_
     log.info('Post process completed')
     return result, ctx_dict
 
-def fine_tune(model, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id):
-    if model is None or train_dl is None:
+def fine_tune(predictor, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id):
+    if predictor is None or train_dl is None:
         log.error('Fine Tuning can\'t be initalized')
         raise AssertionError(f'Model and Dataset need to be prepared first')
    
     log.info('Updating the model layers')
-    new_layers_cfg = ft_cfg.new_layers_cfg 
-    model = prepare_fine_tune_model(model, new_layers_cfg)
+    new_layers_cfg = ft_cfg.new_layers_cfg
+    predictor = prepare_fine_tune_model(predictor, new_layers_cfg)
     updated_model_cfg = update_model_cfg(model_cfg, new_layers_cfg)
 
     exp_name = train_cfg.exp_name
@@ -157,7 +151,7 @@ def fine_tune(model, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cf
         new_train_cfg = ft_cfg.new_train_cfg
         updated_train_cfg = update_train_cfg(new_train_cfg, train_cfg)
         log.info('Starting the fine-tune training')
-        model = model_src.train.train_model(model, train_dl, val_dl, meta, updated_train_cfg)
+        predictor = model_src.train.train_model(predictor, train_dl, val_dl, meta, updated_train_cfg)
         run_info = mlflow.active_run().info
         exp_id = run_info.experiment_id
         parent_url = f'{mlflow_public_uri}/#/experiments/{exp_id}/runs/{run_id}'
@@ -169,10 +163,10 @@ def fine_tune(model, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cf
         else:
             mlflow.set_tag('is_post_processed_parent', 'false')
             log.info('Logging artifacts')
-        store_artifacts(model, meta, updated_dl_cfg, updated_model_cfg, train_cfg, pp_cfg)
+        store_artifacts(predictor.get_model(), meta, updated_dl_cfg, updated_model_cfg, train_cfg, pp_cfg)
     mlflow.end_run()
 
-
+# TODO: update this fun maybe
 def store_artifacts(model, meta, dl_cfg, model_cfg, train_cfg, pp_cfg=None):
     with tempfile.TemporaryDirectory() as td:
         log_dataset(dl_cfg, meta, td)
@@ -183,7 +177,6 @@ def store_artifacts(model, meta, dl_cfg, model_cfg, train_cfg, pp_cfg=None):
 def log_dataset(dl_cfg, meta, td):
     ds_path = os.path.join(td, 'data_cfg.json')
     log.info(f'storing artficats: {dl_cfg}, meta:{meta.to_dict()}')
-    # log.info(f'tpye of dl_cfg: {type(dl_cfg)}')
     with open(ds_path, 'w') as f:
         data_dict = {
         'data_cfg': dl_cfg.model_dump(),

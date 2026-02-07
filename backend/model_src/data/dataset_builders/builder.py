@@ -1,9 +1,7 @@
 from enum import Enum
-from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader, Dataset
 
 from model_src.data.dataset_builders.sklearn_builder import SklearnDataBuilder
-# from model_src.data.dataset_builders.torchvision_builder import TorchVisionImageDataBuilder
 from model_src.data.dataset_builders.hf_builder import HuggingFaceBuilder
 
 from model_src.data.transforms import compose_transforms
@@ -52,7 +50,6 @@ def update_train_data(train_dl, meta, new_ds_cfg):
 def update_dl_cfg(old_cfg, new_dl_cfg):
     old_cfg.dataset_transforms.train.transform = new_dl_cfg.new_train_transform
     return old_cfg
-
 
 class DatasetWrapper(Dataset):
     def __init__(self, ds):

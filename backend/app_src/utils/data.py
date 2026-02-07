@@ -8,7 +8,6 @@ def get_dataset_info(cfg):
     return builder.info
 
 # TODO: If dataset does not provide validation set, need to manually split train dataset
-# TODO: need to add more tfs
 def prepare_dataset(cfg):
     train, val, _, meta =  build_data(cfg)
     return {

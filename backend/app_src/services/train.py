@@ -41,7 +41,7 @@ async def run_train_model(ctx: AppContext, job_id: str, cfg: TrainJobRequest) ->
         params = await get_train_params(ctx, cfg)
         await asyncio.to_thread(train_model, *params)
         async with ctx.jobs_lock:
-            ctx.model = None
+            ctx.predictor = None
             ctx.val = None
             ctx.test = None
             ctx.meta = None
@@ -137,7 +137,7 @@ async def run_fine_tune(ctx: AppContext, job_id: str, cfg: FineTuneJobRequest) -
         await asyncio.to_thread(fine_tune, *params)
         
         async with ctx.jobs_lock:
-            ctx.model = None
+            ctx.predictor = None
             ctx.train = None
             ctx.val = None
             ctx.test = None
@@ -156,7 +156,7 @@ async def run_fine_tune(ctx: AppContext, job_id: str, cfg: FineTuneJobRequest) -
         )
     except Exception as e:
         async with ctx.jobs_lock:
-            ctx.model = None
+            ctx.predictor = None
             ctx.train = None
             ctx.val = None
             ctx.test = None
@@ -189,14 +189,14 @@ async def update_job(ctx: AppContext, job_id, **kwargs) -> bool:
     
 async def get_train_params(ctx: AppContext, cfg: TrainJobRequest):
     async with ctx.jobs_lock:
-        model = ctx.model
+        predictor = ctx.predictor
         train = ctx.train
         val = ctx.val
         meta = ctx.meta
         dl_cfg = ctx.cached_dl_cfg
         model_cfg = ctx.cached_model_cfg
         train_cfg = ctx.cached_train_cfg
-        return (model, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg)
+        return (predictor, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg)
 
 async def get_inspect_run_params(ctx: AppContext, cfg: InspectRunJobRequest):
     async with ctx.jobs_lock:
@@ -206,18 +206,18 @@ async def get_inspect_run_params(ctx: AppContext, cfg: InspectRunJobRequest):
 async def get_post_process_params(ctx: AppContext, cfg: PostProcessingJobRequest):
     async with ctx.jobs_lock:
         run_id = ctx.cached_run_id
-        model = ctx.model
+        predictor = ctx.predictor
         val = ctx.val
         meta = ctx.meta
         dl_cfg = ctx.cached_dl_cfg
         model_cfg = ctx.cached_model_cfg
         train_cfg = ctx.cached_train_cfg
-        return (model, val, meta, dl_cfg, model_cfg, train_cfg, cfg, run_id)
+        return (predictor, val, meta, dl_cfg, model_cfg, train_cfg, cfg, run_id)
     
 async def get_ft_params(ctx: AppContext, ft_cfg: FineTuneJobRequest):
     async with ctx.jobs_lock:
         run_id = ctx.cached_run_id
-        model = ctx.model
+        predictor = ctx.predictor
         train_dl = ctx.train
         val_dl = ctx.val
         meta = ctx.meta
@@ -225,4 +225,4 @@ async def get_ft_params(ctx: AppContext, ft_cfg: FineTuneJobRequest):
         model_cfg = ctx.cached_model_cfg
         train_cfg = ctx.cached_train_cfg
         pp_cfg = ctx.cached_pp_cfg
-        return (model, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id)
+        return (predictor, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id)

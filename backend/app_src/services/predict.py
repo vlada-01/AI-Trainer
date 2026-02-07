@@ -39,7 +39,7 @@ async def run_predict(ctx: AppContext, job_id: str, cfg: PredictJobRequest) -> N
         params = await get_predict_params(ctx, cfg)
         result = await asyncio.to_thread(predict, *params)
         async with ctx.jobs_lock:
-            ctx.model = None
+            ctx.predictor = None
             ctx.val = None
             ctx.test = None
             ctx.meta = None

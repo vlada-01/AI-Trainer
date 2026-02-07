@@ -23,8 +23,6 @@ def build_layers(layers_cfg, use_torch_layers):
         log.debug(f'Constructing layer type: {type}')
         cfg_dict = layer.model_dump(exclude={'type', 'predefined'})
         layers.append(build_layer(type.value, use_torch_layers, cfg_dict))
-        # layers.append(LAYER_REGISTRY_MAP[type](**cfg_dict))
-    
     return layers
 
 def build_layer(type, use_torch_layers, cfg_dict):

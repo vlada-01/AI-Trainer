@@ -33,10 +33,7 @@ def get_ds_info(request: Request, data: DatasetInfoRequest):
                 'error_message': str(e)
             }
         )
-# TODO: Need to test another transformation types
-# TODO: need to prevent too big val, test
-# TODO: Need to test hugging face
-# TODO: Need to implement meta for hugging face
+# TODO: Need to test All transformation types
 @router.post('/prepare_dataset', response_model=DatasetJobResponse)
 async def prepare_dataset(request: Request, data: DatasetJobRequest):
     ctx = request.app.state.ctx

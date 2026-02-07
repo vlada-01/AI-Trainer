@@ -76,55 +76,46 @@ class ClassificationErrorAnalysis:
         
         self.confusion_matrix = np.zeros((num_classes, num_classes + 1))
     
-    def update(self, ids, preds, targets, post_processor=None):
-
-        y_pred = torch.argmax(preds, dim=1)
-        is_correct = (y_pred == targets)
-        softmax_preds = torch.softmax(preds, dim=1)
-        confidence = torch.max(softmax_preds, dim=1).values
-        y_true_prob = softmax_preds[torch.arange(len(targets)), targets]
-
+    def update(self, ids, logits, predictor, targets):
+        raw_probs = torch.softmax(logits, dim=1)
+        raw_preds = torch.argmax(raw_probs, dim=1)
+        
+        is_raw_correct = (raw_preds == targets)
+        confidence = torch.max(raw_probs, dim=1).values
+        y_true_prob = raw_probs[torch.arange(len(targets)), targets]
         
         new_df = pd.DataFrame({
             AvailableClassificationColumns.id.value: ids.detach().cpu().numpy(),
             AvailableClassificationColumns.y_true.value: targets.detach().cpu().numpy(),
-            AvailableClassificationColumns.y_pred.value: y_pred.detach().cpu().numpy(),
-            AvailableClassificationColumns.is_correct.value: is_correct.detach().cpu().numpy(),
+            AvailableClassificationColumns.y_pred.value: raw_preds.detach().cpu().numpy(),
+            AvailableClassificationColumns.is_correct.value: is_raw_correct.detach().cpu().numpy(),
             AvailableClassificationColumns.confidence.value: confidence.detach().cpu().numpy(),
             AvailableClassificationColumns.y_true_prob.value: y_true_prob.detach().cpu().numpy()
         })
 
-        if post_processor is not None:
-            new_df, final = post_processor.post_process(preds, new_df)
-            np.add.at(self.confusion_matrix, (targets.detach().cpu().numpy(), final.detach().cpu().numpy()), 1)
-        else:
-            np.add.at(self.confusion_matrix, (targets.detach().cpu().numpy(), y_pred.detach().cpu().numpy()), 1)
-
+        new_df, final = predictor.preds_with_error_analysis(logits, new_df)
+        np.add.at(self.confusion_matrix, (targets.detach().cpu().numpy(), final.detach().cpu().numpy()), 1)
+        
         if len(self.df) == 0:
             self.df = new_df.copy()
         else:
             self.df = pd.concat([self.df, new_df], ignore_index=True)
     
-    def test_update(self, ids, preds, targets, post_processor=None):
-        if post_processor is not None:
-            pp_preds = post_processor.post_process(preds)
-        else:
-            pp_preds = torch.argmax(preds, dim=1)
-        
+    def test_update(self, ids, preds, targets):
         ids = ids.detach().cpu().numpy()
-        pp_preds = pp_preds.detach().cpu().numpy()
+        preds = preds.detach().cpu().numpy()
         targets = targets.detach().cpu().numpy()
 
-        is_correct = (pp_preds == targets)
+        is_correct = (preds == targets)
         new_df = pd.DataFrame({
             AvailableClassificationColumns.id.value: ids,
             AvailableClassificationColumns.is_correct.value: is_correct,
             AvailableClassificationColumns.y_true.value: targets,
-            AvailableClassificationColumns.y_pred.value: pp_preds,
+            AvailableClassificationColumns.y_pred.value: preds,
         })
         
         # pp_preds[pp_preds == -1] = self.num_classes
-        np.add.at(self.confusion_matrix, (targets, pp_preds), 1)
+        np.add.at(self.confusion_matrix, (targets, preds), 1)
 
         if len(self.df) == 0:
             self.df = new_df.copy()
