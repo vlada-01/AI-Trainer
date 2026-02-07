@@ -1,6 +1,7 @@
 from enum import Enum
 import sys
 import torch
+from pprint import pformat
 
 from common.logger import get_logger
 
@@ -17,6 +18,7 @@ class AvailablePostProcessors(str, Enum):
     # clipping, prediction_intervals, reject po nesigurnosti, rounding, linear_calibration
 
 def build_post_processor(pp_cfg):
+    log.debug('Initializing post processor builder for cfg:\n%s', pformat(pp_cfg.model_dump()))
     pp_list = []
     pp_names= []
     module = sys.modules[__name__]
@@ -29,10 +31,10 @@ def build_post_processor(pp_cfg):
         pp = cls(**cfg_dict)
         log.info(f'Adding {type(pp).__name__} in Post Processor')
         pp_list.append(pp)
-        
+    log.info('Post Processor prepared successfully')
     return PostProcessor(pp_cfg, pp_list, pp_names)
 
-# TODO: maybe it is better to add mechanism if some required post-process is missing
+# Current post processor always expects to have decision steps to already have preds
 class PostProcessor():
     def __init__(self, pp_cfg,pp_list, pp_names):
         self.pp_cfg = pp_cfg
@@ -174,7 +176,7 @@ class GlobalThreshold():
         val_correct = val_correct[idx]
 
         cum_acc = torch.cumsum(val_correct, dim=0) / (torch.arange(len(val_correct)) + 1)
-        log.info(f'GlobalThreshold {cum_acc}')
+        log.debug(f'GlobalThreshold {cum_acc}')
 
         valid = torch.where(cum_acc >= self.accuracy)[0]
         if len(valid) == 0:

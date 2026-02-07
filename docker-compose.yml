@@ -26,13 +26,20 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-
+    
+    tty: true
+    
+    stdin_open: true
+    
     gpus: all
 
     ipc: host
     shm_size: "8gb"
 
     environment:
+      LOG_LEVEL: DEBUG
+      MUTE_THIRD_PARTY_LOGS: "1"
+
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_REGISTRY_URI: http://mlflow:5000
       MLFLOW_PUBLIC_URI:  http://localhost:5000

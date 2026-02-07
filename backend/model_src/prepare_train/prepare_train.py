@@ -4,6 +4,7 @@ import torch.optim as opt
 import inspect
 from dataclasses import dataclass
 from typing import Sequence, Union
+from pprint import pformat
 
 
 from model_src.prepare_train.metrics import prepare_metrics, Metric
@@ -25,6 +26,7 @@ class TrainParams:
     error_analysis: Union[ClassificationErrorAnalysis, RegressionErrorAnalysis]
 
 def prepare_train_params(model_params, meta, train_cfg):
+    log.debug('Preparing train params for cfg:\n%s', pformat(train_cfg.model_dump()))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #TODO: needs to be changed if there are any other devices
     epochs = train_cfg.epochs
     num_of_iters = train_cfg.num_of_iters
@@ -34,6 +36,7 @@ def prepare_train_params(model_params, meta, train_cfg):
     metrics = prepare_metrics(train_cfg.metrics, meta)
     error_analysis = prepare_error_analysis(meta)
 
+    log.debug('Train Params are successfully prepared')
     return TrainParams(
         device=device,
         epochs=epochs,
@@ -44,6 +47,7 @@ def prepare_train_params(model_params, meta, train_cfg):
         metrics=metrics,
         error_analysis=error_analysis
     )
+    
 
 def prepare(module, cfg, pos_param=None):
     callable = getattr(module, cfg.type, None)
@@ -61,6 +65,7 @@ def prepare(module, cfg, pos_param=None):
     return callable(pos_param, **kwargs) if pos_param is not None else callable(**kwargs)
 
 def update_train_cfg(new_train_cfg, old_train_cfg):
+    log.debug('Updating train params for cfg:\n%s', pformat(new_train_cfg.model_dump()))
     for k in new_train_cfg.model_fields:
         if hasattr(old_train_cfg.train_cfg, k):
             v = getattr(new_train_cfg, k)

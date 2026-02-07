@@ -5,10 +5,9 @@ from abc import ABC, abstractmethod
 
 from model_src.models.post_processor import UNKNOWN_CLASS
 
-# TODO: there is a problem with coverage not showing
+# TODO: there should be a support for coverage
 # TODO: implement avg, weighted ... for show_metrics
 
-# TODO: implement all classes from the enum
 class AvailableMetrics(str, Enum):
     # for classifications
     accuracy = 'Accuracy'
@@ -24,7 +23,7 @@ class AvailableMetrics(str, Enum):
     bleu = 'Bleu'
     perplexity = 'Perplexity'
     
-    # TODO: add total exec time
+    # TODO: maybe add total exec time
 
 def prepare_metrics(cfg_metrics, meta):
     metrics = []
@@ -87,7 +86,7 @@ class Accuracy(Metric):
         self.scored += (preds == targets).type(torch.float).sum().item()
 
     def show(self):
-        return self.name, self.scored * 100 / self.ds_size
+        return self.name, self.scored * 100 / (self.ds_size + 1e-12)
     
 
 class Precision(Metric):

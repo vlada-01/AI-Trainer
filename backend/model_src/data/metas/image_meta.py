@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 from model_src.data.metas.meta import MetaData, MetaTypes
+import torch
 
 from common.logger import get_logger
 
@@ -16,7 +17,7 @@ class ImageMetaData(MetaData):
         for k, v in upd_dict.items():
             if hasattr(self, k):
                 if callable(getattr(self, k)):
-                    log.info(f'Calling ImageMetaData attr {k}')
+                    log.debug(f'Calling ImageMetaData attr "{k}"')
                     fn = getattr(self, k)
                     if isinstance(v, dict):
                         fn(**v)
@@ -45,14 +46,13 @@ class ImageMetaData(MetaData):
         return self.task
     
     def get_unique_targets(self):
-        return self.output_size
+        return int(self.output_size[0])
     
     def to_dict(self):
         return {
             'modality': self.modality,
-            'extras': self.extras,
             'input_size': list(self.input_size),
-            'output_size': self.output_size, #TODO: convert to list
+            'output_size': list(self.output_size),
             'task': self.task,
         }
     
@@ -68,7 +68,7 @@ class ImageMetaData(MetaData):
     
     # TODO: need to be careful what is the output.size() - 1 num, list, list[list]
     def set_sizes(self, train_ds):
-        log.info('Updating ImageMetaData sizes')
+        log.debug('Updating ImageMetaData sizes')
         if self.task == 'regression':
             X, y = train_ds[0]
             self.input_size = X.size()
@@ -87,11 +87,11 @@ class ImageMetaData(MetaData):
 
         num_classes = len(seen)
 
-        log.info(f'Number of classes: {num_classes}')
+        log.debug(f'Number of classes: {num_classes}')
         
         X, _ = train_ds[0]
         self.input_size = X.size()
-        self.output_size = num_classes
+        self.output_size = torch.Size([num_classes])
 
     def set_task(self, task):
         self.task = task

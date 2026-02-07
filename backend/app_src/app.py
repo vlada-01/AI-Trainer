@@ -15,20 +15,16 @@ from app_src.schemas.models import HistoryResponse, Experiment
 
 import app_src.utils.app_utils as utils
 
-# tracking_uri = "http://localhost:5000"
-# registry_uri = "http://localhost:5000"
-# FRONTEND_LOCALHOST_URI = "http://localhost:3000"
-# FRONTEND_URI = "http://127.0.0.1:3000"
-
 CLEAN_UP_INTERVAL = 60
 
 from common.logger import setup_logging, get_logger
 
 log = get_logger(__name__)
 
-mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI")
-tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
-registry_uri = os.getenv("MLFLOW_REGISTRY_URI")
+mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+registry_uri = os.getenv("MLFLOW_REGISTRY_URI", "http://localhost:5000")
+origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,11 +56,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-origins = origins = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000"
-).split(",")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in origins],
@@ -81,7 +72,6 @@ app.include_router(predict_router)
 def history():
     try:
         ctx = app.state.ctx
-        log.info(f'mlflow client: {ctx}')
         exps = ctx.mlflow_client.search_experiments()
         active_exps = [e for e in exps if e.lifecycle_stage == 'active']
         list_of_exps = [

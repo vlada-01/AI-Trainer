@@ -1,4 +1,5 @@
 import re
+import torch
 from torch.utils.data import DataLoader
 from model_src.data.metas.meta import MetaData, MetaTypes
 
@@ -49,15 +50,17 @@ class TextualMetaData(MetaData):
         return self.task
     
     def get_unique_targets(self):
-        return self.output_size
+        return int(self.output_size[0])
     
-    # TODO: update me
     def to_dict(self):
         return {
             'modality': self.modality,
-            'extras': self.extras,
+            'task': self.task,
+            'vocab': self.vocab,
+            'tokenizer': self.tokenizer.pattern,
+            'attention_mask': self.attention_mask,
             'input_size': list(self.input_size),
-            'output_size': self.output_size, #TODO: convert to list
+            'output_size': list(self.output_size),
             'task': self.task,
         }
     
@@ -75,7 +78,7 @@ class TextualMetaData(MetaData):
         return {}
     
     # ---------------------- Internal -----------------------
-
+    # TODO: maybe try to load all data in memory
     def prepare_textual_params(self, raw_train, mapper):
         log.info(f'Preparing tokenizer')
         self.tokenizer = re.compile(r'\w+|[^\w\s]', flags=re.UNICODE)
@@ -135,7 +138,7 @@ class TextualMetaData(MetaData):
             'input_ids': X['input_ids'].size(),
             'attn_mask': X['attention_mask'].size()
         }
-        self.output_size = num_classes
+        self.output_size = torch.Size([num_classes])
 
     def set_task(self, task):
         self.task = task

@@ -16,7 +16,7 @@ router = APIRouter(prefix="/data", tags=["dataloaders"])
 @router.post('/get_dataset_info', response_model=DatasetInfoResponse)
 def get_ds_info(request: Request, data: DatasetInfoRequest):
     try:
-        log.debug(f'Requesting get_ds_info for {data.model_dump()}')
+        log.debug(f'Initializing get dataset info for {data.model_dump()}')
         ds_info_dict = utils.get_dataset_info(data)
         log.info('Dataset Info succesfully found')
         return DatasetInfoResponse(

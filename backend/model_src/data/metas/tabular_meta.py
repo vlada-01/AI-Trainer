@@ -19,7 +19,7 @@ class TabularMetaData(MetaData):
         for k, v in upd_dict.items():
             if hasattr(self, k):
                 if callable(getattr(self, k)):
-                    log.info(f'Calling TabularMetaData attr {k}')
+                    log.debug(f'Calling TabularMetaData attr "{k}"')
                     fn = getattr(self, k)
                     if isinstance(v, dict):
                         fn(**v)

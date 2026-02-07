@@ -45,9 +45,10 @@ def predict(predictor, test_dl, device, metrics, error_analysis):
                 X = X.to(device)
             y = y.to(device)
             logits = predictor.logits(X)
-            preds= predictor.preds(logits)
-            error_analysis.test_update(indices, preds, y)
+            preds = predictor.preds(logits)
             update_metrics(metrics, preds, y)
+            error_analysis.test_update(indices, preds, y)
+            
     metric_results = show_results(metrics)
     dict_error_analysis = error_analysis.get_results()
     return metric_results, dict_error_analysis

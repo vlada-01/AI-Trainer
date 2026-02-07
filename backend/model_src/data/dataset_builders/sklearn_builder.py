@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import sklearn.datasets as datasets
 import numpy as np
+from pprint import pformat
 
 from model_src.data.metas.meta import MetaTypes
 from model_src.data.metas.utils import create_meta, update_meta
@@ -19,14 +20,15 @@ class SklearnDataBuilder():
 
         log.info('Loading raw data')
         X, y, meta_dict = self.load_data(cfg)
-        log.info(f'Initializing the {cfg.meta_type.value} type')
-
+        
+        log.info(f'Initializing the {MetaTypes.tabular.value} meta')
         self.meta = create_meta(MetaTypes.tabular)
 
         upd_dict = {
             'set_task': cfg.task,
             **meta_dict
         }
+        log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
 
         log.info('Splitting data')

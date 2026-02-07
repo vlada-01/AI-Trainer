@@ -2,6 +2,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 import torch
 from enum import Enum
+from pprint import pformat
 
 from common.logger import get_logger
 
@@ -24,7 +25,6 @@ def build_normalize_min_max(params):
 def build_img_to_tensor(params):
     return T.ToTensor()
 
-# TODO: problem if the following transformations exist. No idea how they should be resolved for dict
 def build_text_to_tensor(params):
     tokenizer = params['tokenizer']
     vocab = params['vocab']
@@ -95,7 +95,6 @@ REGISTRY_TRANSFORMS_MAP = {
     AvailableTransforms.img_to_tensor: build_img_to_tensor,
     AvailableTransforms.to_tensor: build_to_tensor,
     AvailableTransforms.text_to_tensor: build_text_to_tensor
-    # TODO need to support some torchvision transformations
 }
 
 def assemble_transforms(cfg_dataset_transforms, meta):
@@ -107,36 +106,36 @@ def assemble_transforms(cfg_dataset_transforms, meta):
     if cfg is not None:
         t_cfg = cfg.train.transform
         tt_cfg = cfg.train.target_transform
-        log.info('Composing train transforms')
+        log.debug('Composing train transforms')
         train_t = compose_transforms(t_cfg, meta)
-        log.info('Composing train target transforms')
+        log.debug('Composing train target transforms')
         train_tt = compose_transforms(tt_cfg, meta)
 
         t_cfg = cfg.valid.transform 
         tt_cfg = cfg.valid.target_transform
-        log.info('Composing val transforms') 
+        log.debug('Composing val transforms') 
         val_t = compose_transforms(t_cfg, meta)
-        log.info('Composing val target transforms')
+        log.debug('Composing val target transforms')
         val_tt = compose_transforms(tt_cfg, meta)
 
         t_cfg = cfg.test.transform if cfg.test is not None else None
         tt_cfg = cfg.test.target_transform if cfg.test is not None else None
-        log.info('Composing test transforms') 
+        log.debug('Composing test transforms') 
         test_t = compose_transforms(t_cfg, meta)
-        log.info('Composing test target transforms') 
+        log.debug('Composing test target transforms') 
         test_tt = compose_transforms(tt_cfg, meta)
     return train_t, train_tt, val_t, val_tt, test_t, test_tt
 
 def compose_transforms(cfg, meta):
     if cfg is None:
         return None
-    log.debug(f'Assembling transforms for the {cfg}')
+    log.debug('Assembling transforms for the cfg:\n%s', pformat(cfg))
     normalized = normalize_params(cfg)
-    log.debug(f'Normalized parameters: {normalized}')
+    log.debug('Normalized parameters:\n%s', pformat(normalized))
     resolved = resolve_params(normalized, meta)
-    log.debug(f'Resolved parameters: {resolved}')
+    log.debug('Resolved parameters:\n%s', pformat(resolved))
     tfs = generate_transforms(resolved)
-    log.debug(f'Assembled transformations.Compose: {tfs.transforms}')
+    log.debug('Assembled transformations.Compose:\n%s', pformat(tfs.transforms))
     return tfs
 
 def normalize_params(cfg):

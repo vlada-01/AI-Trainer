@@ -1,5 +1,6 @@
 from datasets import load_dataset
 from torch.utils.data import Dataset
+from pprint import pformat
 
 from model_src.data.metas.utils import create_meta, update_meta
 from model_src.data.mapper import prepare_mapper
@@ -30,12 +31,13 @@ class HuggingFaceBuilder():
             'set_attention_mask': ATTENTION_MASK,
             'prepare_textual_params': (raw_train, mapper)
         }
+        log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
 
-        log.info('Initialize composing transforms')
-        train_t, train_tt, val_t, val_tt, test_t, test_tt = assemble_transforms(self.cfg.dataset_transforms, self.meta)
+        log.info('Assembling dataset transformations')
+        train_t, train_tt, val_t, val_tt, test_t, test_tt = assemble_transforms(self.cfg_dataset_transforms, self.meta)
         
-        log.info('Creating Datasets')
+        log.info('Initializing Datasets')
         self.train_ds = HfDataset(raw_train, mapper, train_t, train_tt)
         self.val_ds = HfDataset(raw_val, mapper, val_t, val_tt)
         self.test_ds = HfDataset(raw_test, mapper, test_t, test_tt) if raw_test is not None else None
@@ -44,6 +46,7 @@ class HuggingFaceBuilder():
             'set_task': cfg.task,
             'set_sizes': self.train_ds,
         }
+        log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
 
     def get_train(self):

@@ -2,7 +2,7 @@ from torch import nn
 import torch
 import torch.nn.functional as F
 
-# TODO: add BatchNorm2d
+# TODO: add Transformer Layers
 
 class Conv2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=(3,3), padding=0, stride=1):

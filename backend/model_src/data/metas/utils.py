@@ -3,6 +3,10 @@ from model_src.data.metas.meta import MetaTypes
 from model_src.data.metas.tabular_meta import TabularMetaData
 from model_src.data.metas.image_meta import ImageMetaData
 
+from common.logger import get_logger
+
+log = get_logger(__name__)
+
 META_DATA_REGISTRY_MAP = {
     MetaTypes.tabular: TabularMetaData,
     MetaTypes.image: ImageMetaData
@@ -16,6 +20,7 @@ def create_meta(meta_type):
 def update_meta(meta, upd_dict):
     meta.update(upd_dict)
 
+# TODO: consider adding rebuilder for faster data preparation after initial training
 # def try_rebuild_meta(meta_cfg):
 #     if meta_cfg is None:
 #         return None, False

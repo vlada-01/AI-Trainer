@@ -1,6 +1,7 @@
 from enum import Enum
 from torch import nn
 import torch
+from pprint import pformat
 
 from model_src.models.layers.layer_factory import build_layers, build_layer
 from model_src.models.post_processor import build_post_processor
@@ -9,24 +10,29 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-# TODO: later will be needed specific forward types due to eval
 class AvailableForwardTypes(str, Enum):
     default = 'default_forward'
     dict = 'dictionary_forward'
 
 def build_predictor(model_cfg, pp_cfg=None):
+    log.info('Initialzing predictor builder')
     model = build_model(model_cfg)
-    pp = build_post_processor(pp_cfg) if pp_cfg is not None else None
+    if pp_cfg is not None:
+        pp = build_post_processor(pp_cfg)
+    else:
+        log.info('Skipping post processor builder')
+        pp = None
     predictor = Predictor(model, pp)
+    log.info('Predictor prepared successully')
     return predictor
 
 def build_model(cfg):
     forward_type = cfg.forward_type
     use_torch_layers = cfg.use_torch_layers
     layers_cfg = cfg.layers
-    log.info(f'Initialzing model builder for the {cfg}')
+    log.debug('Initialzing model builder for the cfg:\n%s', pformat(cfg.model_dump()))
     model = Net(forward_type, layers_cfg, use_torch_layers)
-    log.info('Model is prepared')
+    log.info('Model is prepared successfully')
     return model
 
 def prepare_fine_tune_model(predictor, new_layers_cfg):
@@ -51,15 +57,14 @@ def prepare_fine_tune_model(predictor, new_layers_cfg):
             new_layers.append(build_layer(layer_cfg.type, use_torch_layers, cfg_dict))
         else:
             log.error(f'{layer_type} does not exist for the Fine Tune layers field')
-    log.info(f'new layers: {new_layers}')
+    
     model.layers = nn.Sequential(*new_layers)
-    log.info(f"Model: {model}")
-    for name, p in model.named_parameters():
-        print(name, p.shape, p.requires_grad)
+    log.debug('New model layers:\n%s', '\n'.join(f'[{i}] {layer}' for i, layer in enumerate(new_layers)))
     predictor.set_model(model)
     return predictor
 
 def update_model_cfg(old_cfg, new_layers_cfg):
+    log.debug('Updating model layers with cfg:\n%s', pformat(new_layers_cfg.model_dump()))
     old_cfg.layers = new_layers_cfg.layers
     return old_cfg
             

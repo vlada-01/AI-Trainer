@@ -15,19 +15,20 @@ from common.logger import get_logger
 log = get_logger(__name__)
 
 def predict(client, req):
-    log.info('Initializing test process')
+    log.info('Initializing predict process')
     run_id = req.run_id
 
+    log.info(f'Retrieving logged artifacts for run_id: {run_id}')
     data = retrieve_logged_artficats(client, run_id)
 
-    # TODO: make meta be used later on
     log.info('Rebuilding test Dataloader')
     _, _, test_dl, meta = build_data(DatasetJobRequest(**data['dataset_cfg']))
 
-    log.info('Rebuilding model and post processor')
+    log.info('Rebuilding predictor')
     model_cfg = ModelJobRequest(**data['model_cfg'])
     pp_cfg = PostProcessingJobRequest(**data['pp_cfg']) if data['pp_cfg'] is not None else None
     predictor = build_predictor(model_cfg, pp_cfg)
+    predictor.get_model().load_state_dict(data['model_state_data'])
 
     log.info('Rebuilding train params')
     train_params = prepare_train_params(predictor.get_model_parameters(), meta, TrainJobRequest(**data['train_cfg']).train_cfg)
@@ -45,7 +46,7 @@ def predict(client, req):
     if 'confusion_matrix' in dict_error_analysis:
         log.info('Adding confusion matrix in the result')
         result['test_confusion_matrix'] = dict_error_analysis['confusion_matrix']
-
+    log.info('Predict proccess is succesfully finished')
     return result
 
     

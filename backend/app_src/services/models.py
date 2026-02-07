@@ -64,7 +64,7 @@ async def update_job(ctx: AppContext, job_id, **kwargs) -> bool:
     async with ctx.jobs_lock:
         job = ctx.jobs[job_id]
         if not job:
-            log.warning(f'There is no job for updating with id: {job_id}')
+            log.error(f'There is no job for updating with id: {job_id}')
             return False
         ctx.jobs[job_id] = job.model_copy(update=kwargs)
         return True

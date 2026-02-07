@@ -79,7 +79,6 @@ async def run_inspect_run(ctx: AppContext, job_id: str, cfg: InspectRunJobReques
                     setattr(ctx, k, v)
                 else:
                     raise ValueError(f'Field {k} does not exist in the AppContext')
-        # TODO: update results in job
         await update_job(
             ctx,
             job_id,

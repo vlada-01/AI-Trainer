@@ -1,4 +1,5 @@
 import mlflow
+from pprint import pformat
 
 from model_src.prepare_train.prepare_train import prepare_train_params
 from model_src.eval import evaluate
@@ -9,7 +10,7 @@ log = get_logger(__name__)
 
 def train_model(predictor, train, val, meta, cfg):
     train_cfg = cfg.train_cfg
-    log.info(f'Preparing Training Params with {train_cfg}')
+    log.debug('Preparing Training Params for cfg:\n%s', pformat(train_cfg.model_dump()))
     train_params = prepare_train_params(predictor.get_model_parameters(), meta, train_cfg)
     log_train_params(train_cfg)
 
@@ -19,10 +20,10 @@ def train_model(predictor, train, val, meta, cfg):
     return predictor
 
 def start_train(predictor, train_dl, val_dl, train_params, log_train_metrics):
-    predictor.get_model().to(train_params.device)
     log.info('Starting model training')
+    predictor.get_model().to(train_params.device)
     for ep in range(train_params.epochs):
-        log.info(f'Current Epoch: {ep+1}')
+        log.info(f'Current Epoch: {ep}')
         predictor = train(predictor, train_dl, train_params)
         log.info(f'Logging val metrics for the epoch: {ep}')
         log_metrics(predictor, val_dl, train_params, 'val', ep)
@@ -30,6 +31,7 @@ def start_train(predictor, train_dl, val_dl, train_params, log_train_metrics):
         if log_train_metrics:
             log.info(f'Logging train metrics for the epoch: {ep}')
             log_metrics(predictor, train_dl, train_params, 'train', ep)
+        # TODO: does not work if the scheduler requires loss
         if train_params.scheduler is not None:
             train_params.scheduler.step()
     

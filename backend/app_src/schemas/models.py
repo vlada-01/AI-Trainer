@@ -5,7 +5,6 @@ from model_src.models.model_builder import AvailableForwardTypes
 from model_src.models.layers.layer_factory import AvailableLayers
 
 #----------------------------------
-# TODO: there might be the issue with user being mad and try to concatenate layers with  invalid shapes
 class BatchNorm2dLayer(BaseModel):
     type: Literal[AvailableLayers.batchnorm2d]
     num_features: int

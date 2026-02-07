@@ -15,7 +15,6 @@ async def run_train(request: Request, data: TrainJobRequest):
     ctx = request.app.state.ctx
     job = await create_job(ctx)
 
-    #TODO: need to check for errors in the train_model
     asyncio.create_task(run_train_model(ctx, job.id, data))
     return job
 
@@ -25,7 +24,7 @@ async def train_status(request: Request, job_id: str):
 
     job = await get_job(ctx, job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail={"error": "job_not_found"}) #TODO: change this to my own
+        raise HTTPException(status_code=404, detail={"error": "job_not_found"})
 
     return job
 
@@ -34,7 +33,6 @@ async def inspect_run(request: Request, data: InspectRunJobRequest):
     ctx = request.app.state.ctx
     job = await create_job(ctx)
 
-    #TODO: need to check for errors in the train_model
     asyncio.create_task(run_inspect_run(ctx, job.id, data))
     return job
 
@@ -44,7 +42,7 @@ async def inspect_run_status(request: Request, job_id: str):
 
     job = await get_job(ctx, job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail={"error": "job_not_found"}) #TODO: change this to my own
+        raise HTTPException(status_code=404, detail={"error": "job_not_found"})
 
     return job
 
@@ -62,7 +60,7 @@ async def post_process_status(request: Request, job_id: str):
 
     job = await get_job(ctx, job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail={"error": "job_not_found"}) #TODO: change this to my own
+        raise HTTPException(status_code=404, detail={"error": "job_not_found"})
 
     return job
 
@@ -80,6 +78,6 @@ async def fine_tune_status(request: Request, job_id: str):
 
     job = await get_job(ctx, job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail={"error": "job_not_found"}) #TODO: change this to my own
+        raise HTTPException(status_code=404, detail={"error": "job_not_found"})
 
     return job
