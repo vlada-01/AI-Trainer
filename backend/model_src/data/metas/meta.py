@@ -19,7 +19,7 @@ class MetaData(ABC):
         pass
 
     @abstractmethod
-    def get_sample_size(self):
+    def get_necessary_sizes(self):
         pass
 
     @abstractmethod

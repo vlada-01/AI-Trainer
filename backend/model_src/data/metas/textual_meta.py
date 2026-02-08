@@ -1,6 +1,7 @@
 import re
 import torch
 from torch.utils.data import DataLoader
+
 from model_src.data.metas.meta import MetaData, MetaTypes
 
 from common.logger import get_logger
@@ -12,8 +13,7 @@ class TextualMetaData(MetaData):
         super().__init__(MetaTypes.textual)
         self.task = None
         self.vocab = None
-        self.tokenizer = None
-        self.attention_mask = None
+        self.max_len = None
         self.input_size = None
         self.output_size = None
 
@@ -21,7 +21,7 @@ class TextualMetaData(MetaData):
         for k, v in upd_dict.items():
             if hasattr(self, k):
                 if callable(getattr(self, k)):
-                    log.info(f'Calling TextualMetaData attr {k}')
+                    log.info(f'Calling TextualMetaData attr "{k}"')
                     fn = getattr(self, k)
                     if isinstance(v, dict):
                         fn(**v)
@@ -40,10 +40,12 @@ class TextualMetaData(MetaData):
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
     
-    def get_sample_size(self):
+    def get_necessary_sizes(self):
         return {
             'input_size': self.input_size,
-            'output_size': self.output_size
+            'output_size': self.output_size,
+            'vocab_size': len(self.vocab),
+            'max_len_size': self.max_len
         }
     
     def get_task(self):
@@ -57,8 +59,7 @@ class TextualMetaData(MetaData):
             'modality': self.modality,
             'task': self.task,
             'vocab': self.vocab,
-            'tokenizer': self.tokenizer.pattern,
-            'attention_mask': self.attention_mask,
+            'max_len': self.max_len,
             'input_size': list(self.input_size),
             'output_size': list(self.output_size),
             'task': self.task,
@@ -68,9 +69,8 @@ class TextualMetaData(MetaData):
 
     def resolve_text_to_tensor(self):
         params = {
-            'tokenizer': self.tokenizer,
             'vocab': self.vocab,
-            'attention_mask': self.attention_mask
+            'max_len': self.max_len
         }
         return params
     
@@ -78,33 +78,43 @@ class TextualMetaData(MetaData):
         return {}
     
     # ---------------------- Internal -----------------------
-    # TODO: maybe try to load all data in memory
+    # TODO: 
+    # Should improve the vocab logic, by adding max_size
+    # add more frequent tokens first
     def prepare_textual_params(self, raw_train, mapper):
-        log.info(f'Preparing tokenizer')
-        self.tokenizer = re.compile(r'\w+|[^\w\s]', flags=re.UNICODE)
-        
         log.info('Preparing vocabulary')
-        vocab = {}
-        vocab['<pad>'] = 0
-        vocab['<unk>'] = 1
-        vocab['<sos>'] = 2
-        vocab['<eos>'] = 3
+        vocab = {
+            '<pad>': 0,
+            '<unk>': 1,
+            '<sos>': 2,
+            '<eos>': 3,
+        }
         vocab_id = 4
-        bigger_then_attn = 0
+        greater_then_attn_mask = 0
+        attn_sizes = []
+        max_attn_mask = 0
         for i in range(len(raw_train)):
             raw_dict = raw_train[i]
-            X, _ = mapper(raw_dict)
-            tokens = self.tokenizer.findall(X)
-            if len(tokens) + 2 > self.attention_mask:
-                bigger_then_attn += 1
+            tokens, _ = mapper(raw_dict)
+            if len(tokens) + 2 > self.max_len:
+                greater_then_attn_mask += 1
+            if len(tokens) + 2 > max_attn_mask:
+                max_attn_mask = len(tokens) + 2
+            attn_sizes.append(len(tokens) + 2)
             for token in tokens:
                 if token not in vocab:
                     vocab[token] = vocab_id
                     vocab_id += 1
         self.vocab = vocab
         log.info(f'Size of vocabulary {len(self.vocab)}')
+        
+        p90 = int(0.9 * (len(attn_sizes) -1)) 
+        new_max_len = sorted(attn_sizes)[p90]
+        if new_max_len > self.max_len:
+            log.info(f'Overriding current max_len={self.max_len} with new max_len={new_max_len}')
+            self.max_len = new_max_len
 
-        log.info(f'Number of samples greater then attn_mask({self.attention_mask}), {bigger_then_attn}')
+        log.info(f'Max attention mask: {self.max_len}. Greater then attn_mask: {greater_then_attn_mask}, max size: {max_attn_mask}')
     
     # TODO: need to be careful what is the output.size() - 1 num, list, list[list]
     def set_sizes(self, train_ds):
@@ -143,5 +153,5 @@ class TextualMetaData(MetaData):
     def set_task(self, task):
         self.task = task
 
-    def set_attention_mask(self, attn_mask):
-        self.attention_mask = attn_mask
+    def set_max_len(self, max_len):
+        self.max_len = max_len

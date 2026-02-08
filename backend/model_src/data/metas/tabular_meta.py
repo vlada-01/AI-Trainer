@@ -38,7 +38,7 @@ class TabularMetaData(MetaData):
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
     
-    def get_sample_size(self):
+    def get_necessary_sizes(self):
         return {
             'input_size': self.num_features,
             'output_size': self.unique_targets if self.task == 'classification' else 1

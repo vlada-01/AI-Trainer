@@ -36,7 +36,7 @@ class ImageMetaData(MetaData):
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
     
-    def get_sample_size(self):
+    def get_necessary_sizes(self):
         return {
             'input_size': self.input_size,
             'output_size': self.output_size

@@ -1,4 +1,5 @@
 from datasets import load_dataset
+from transformers import AutoTokenizer
 from torch.utils.data import Dataset
 from pprint import pformat
 
@@ -10,7 +11,7 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-ATTENTION_MASK = 128
+MAX_LEN = 256
 
 class HuggingFaceBuilder():
     def __init__(self, cfg, cfg_dataset_transforms):
@@ -19,16 +20,16 @@ class HuggingFaceBuilder():
 
         log.info('Initializing load of raw data')
         raw_train, raw_val, raw_test = self.load_data()
-        
-        log.info('Preparing mapper')
-        mapper = prepare_mapper(cfg.mapper)
+
+        log.info('Initializing preprocessing raw data')
+        mapper, (raw_train, raw_val, raw_test) = self.preprocess_data([raw_train, raw_val, raw_test])
         
         log.info(f'Initializing the {cfg.meta_type.value} type')
         # TODO: there is no support for the tabular hf datasets (e.g. set_sizes)
         self.meta = create_meta(cfg.meta_type)
 
         upd_dict = {
-            'set_attention_mask': ATTENTION_MASK,
+            'set_max_len': MAX_LEN,
             'prepare_textual_params': (raw_train, mapper)
         }
         log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
@@ -84,7 +85,28 @@ class HuggingFaceBuilder():
             else:
                 raws.append(load_dataset(**kwargs))
         return tuple(raws)
-
+    
+    # TODO: refactor later for any case to return standardized dictionary, easier to control
+    def preprocess_data(self, raws):
+        if self.cfg.meta_type.value == 'textual':
+            log.info('Preprocessing Textual datasets with "distilbert-base-uncased" tokenizer')
+            tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased", use_fast=True)
+            
+            def tokenize_fn(batch):
+                texts = batch[self.cfg.mapper.x_mapping]
+                return {
+                    'tokens': [tokenizer.tokenize(t) for t in texts]
+                }
+            for i, raw in enumerate(raws):
+                if raw is not None: 
+                    raws[i] = raw.map(tokenize_fn, batched=True, num_proc=4)
+            log.info('Preparing mapper')
+            self.cfg.mapper.x_mapping = 'tokens'
+            mapper = prepare_mapper(self.cfg.mapper)
+            return mapper, tuple(raws)
+        log.info('Preparing mapper')
+        mapper = prepare_mapper(self.cfg.mapper)
+        return mapper, tuple(raws)
 
 class HfDataset(Dataset):
     def __init__(self, raw_ds, mapper, transform, target_transform):

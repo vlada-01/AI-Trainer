@@ -38,6 +38,25 @@ class DropoutLayer(BaseModel):
 class FlattenLayer(BaseModel):
     type: Literal[AvailableLayers.flatten]
 
+class PositionalEmbedding(BaseModel):
+    type: Literal[AvailableLayers.positional_embedding]
+    vocab_size: int
+    emb_dim: int
+    max_len: int
+    padding_idx: int
+    dropout: float
+
+class Pooling(BaseModel):
+    type: Literal[AvailableLayers.pooling]
+
+class TransformerEncoder(BaseModel):
+    type: Literal[AvailableLayers.transformer_encoder]
+    num_layers: int
+    emb_dim: int
+    h: int
+    ffn_size: int
+    dropout: float
+
 Layers = List[Union[
         BatchNorm2dLayer,
         Conv2DLayer,
@@ -45,7 +64,10 @@ Layers = List[Union[
         ReLULayer,
         MaxPool2DLayer,
         DropoutLayer,
-        FlattenLayer
+        FlattenLayer,
+        PositionalEmbedding,
+        Pooling,
+        TransformerEncoder
     ]]
 
 class ModelJobRequest(BaseModel):

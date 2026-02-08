@@ -14,7 +14,10 @@ class AvailableLayers(str, Enum):
     flatten = 'Flatten'
     linear = 'Linear'
     maxpool = 'MaxPool2d'
+    pooling = 'Pooling'
+    positional_embedding = 'PositionalEmbedding'
     relu = 'ReLU'
+    transformer_encoder = 'TransformerEncoder'
 
 def build_layers(layers_cfg, use_torch_layers):
     layers = []

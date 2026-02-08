@@ -12,7 +12,7 @@ log = get_logger(__name__)
 
 class AvailableForwardTypes(str, Enum):
     default = 'default_forward'
-    dict = 'dictionary_forward'
+    dict = 'dict_forward'
 
 def build_predictor(model_cfg, pp_cfg=None):
     log.info('Initialzing predictor builder')
@@ -73,7 +73,7 @@ class Net(nn.Module):
     def __init__(self, forward_type, layers_cfg, use_torch_layers):
         super().__init__()
         self.forward_fn = self.select_forward_fn(forward_type)
-        self.layers = nn.Sequential(*build_layers(layers_cfg, use_torch_layers))
+        self.layers = nn.ModuleList(build_layers(layers_cfg, use_torch_layers))
 
     def forward(self, x):
         return self.forward_fn(x)
@@ -95,13 +95,20 @@ class Net(nn.Module):
             raise ValueError(f'Net does not support forward_type {forward_type.value}')
         
     def default_forward(self, x):
-        return self.layers(x)
+        for layer in self.layers:
+            x = layer(x)
+        return x
     
     # used only for textuals
     def dict_forward(self, x):
         X = x['input_ids']
         attn_mask = x['attention_mask']
-        return self.layers(X, attn_mask)
+        for layer in self.layers:
+            if attn_mask is None:
+                x = layer(x)
+            else:
+                x, attn_mask = layer(x, attn_mask)
+        return x
 
 # TODO: needs to be updated to have support for the regression
 # TODO: check if pp needs torch no grad

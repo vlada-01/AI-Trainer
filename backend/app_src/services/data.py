@@ -45,7 +45,7 @@ async def run_prepare_dataset(ctx: AppContext, job_id: str, cfg: DatasetJobReque
 
         details = {
             'task': result['meta'].get_task(),
-            'sample_size': result['meta'].get_sample_size()
+            'neccessary_sizes': result['meta'].get_necessary_sizes()
         }
         await update_job(
             ctx,

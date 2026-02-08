@@ -25,33 +25,24 @@ def build_normalize_min_max(params):
 def build_img_to_tensor(params):
     return T.ToTensor()
 
+# TODO: consider adding raw transformation that takes first and last 128 tokens for example. Good for imdb
 def build_text_to_tensor(params):
-    tokenizer = params['tokenizer']
     vocab = params['vocab']
-    attn_mask = params['attention_mask']
+    max_len = params['max_len']
+    unk_id = vocab['<unk>']
     
-    def tokenize_data(text):
-        tokens = ['<sos>']
-        for tokenized in tokenizer.findall(text):
-            if len(tokens) == attn_mask - 2:
-                break
-            tokens.append(tokenized)
-        tokens.append('<eos>')
-        
-        numericalized = []
-        for token in tokens:
-            if token in vocab:
-                numericalized.append(vocab[token])
-            else:
-                numericalized.append(vocab['<unk>'])
-        
-        tenzorized = torch.tensor(numericalized)
+    def tokenize_data(tokens):
+        vocab_tokens = ['<sos>']
+        vocab_tokens.extend(tokens[:max_len - 1])
+        ids = [vocab.get(tok, unk_id) for tok in vocab_tokens]
+
+        tenzorized = torch.tensor(ids)
         ones = torch.ones(len(tenzorized))
-        zeros = torch.tensor([0] * (attn_mask - len(tenzorized)))
-        mask = torch.cat(ones, zeros)
-        padded = torch.tensor([vocab['<pad>'] * (attn_mask - len(tenzorized))])
+        zeros = torch.tensor([0] * (max_len - len(tenzorized)))
+        mask = torch.cat([ones, zeros])
+        padding = torch.tensor([vocab['<pad>']] * (max_len - len(tenzorized)))
         return {
-            'input_ids': torch.cat(tenzorized, padded),
+            'input_ids': torch.cat([tenzorized, padding]),
             'attention_mask': mask
         }
 
@@ -133,7 +124,7 @@ def compose_transforms(cfg, meta):
     normalized = normalize_params(cfg)
     log.debug('Normalized parameters:\n%s', pformat(normalized))
     resolved = resolve_params(normalized, meta)
-    log.debug('Resolved parameters:\n%s', pformat(resolved))
+    log.debug('Resolved parameters:\n%s', pformat({name: type(v).__name__ for name, v in resolved}))
     tfs = generate_transforms(resolved)
     log.debug('Assembled transformations.Compose:\n%s', pformat(tfs.transforms))
     return tfs
