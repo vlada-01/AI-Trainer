@@ -42,8 +42,8 @@ def build_text_to_tensor(params):
         mask = torch.cat([ones, zeros])
         padding = torch.tensor([vocab['<pad>']] * (max_len - len(tenzorized)))
         return {
-            'input_ids': torch.cat([tenzorized, padding]),
-            'attention_mask': mask
+            'input_ids': torch.cat([tenzorized, padding]).long(),
+            'attention_mask': mask.long()
         }
 
     return T.Lambda(lambda x: tokenize_data(x))

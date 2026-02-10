@@ -108,8 +108,8 @@ class TextualMetaData(MetaData):
         self.vocab = vocab
         log.info(f'Size of vocabulary {len(self.vocab)}')
         
-        p90 = int(0.9 * (len(attn_sizes) -1)) 
-        new_max_len = sorted(attn_sizes)[p90]
+        p80 = int(0.8 * (len(attn_sizes) -1))
+        new_max_len = sorted(attn_sizes)[p80]
         if new_max_len > self.max_len:
             log.info(f'Overriding current max_len={self.max_len} with new max_len={new_max_len}')
             self.max_len = new_max_len

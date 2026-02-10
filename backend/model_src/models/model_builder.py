@@ -105,10 +105,10 @@ class Net(nn.Module):
         attn_mask = x['attention_mask']
         for layer in self.layers:
             if attn_mask is None:
-                x = layer(x)
+                X = layer(X)
             else:
-                x, attn_mask = layer(x, attn_mask)
-        return x
+                X, attn_mask = layer(X, attn_mask)
+        return X
 
 # TODO: needs to be updated to have support for the regression
 # TODO: check if pp needs torch no grad

@@ -165,7 +165,7 @@ class Pooling(nn.Module):
         # return x.mean(dim=1)
         tmp = x * attn_mask.unsqueeze(-1)
         masked_sizes = torch.sum(attn_mask, dim=1).clamp_min(1)
-        return torch.sum(tmp, dim=1) / masked_sizes, None
+        return torch.sum(tmp, dim=1) / masked_sizes.unsqueeze(-1), None
     
 class PositionalEmbedding(nn.Module):
     def __init__(self, vocab_size, emb_dim, max_len=1024, padding_idx = 0, dropout=0.1):
