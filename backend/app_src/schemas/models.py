@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Union, Tuple, Optional, List, Any
+from typing import Literal, Union, Tuple, Optional, List, Any, Dict
 
 from model_src.models.model_builder import AvailableForwardTypes
 from model_src.models.layers.layer_factory import AvailableLayers
@@ -101,3 +101,13 @@ class HistoryResponse(BaseModel):
     exps: List[Experiment]
 
 #----------------------------------
+# TODO: instead of having simple layers, add support to have Sequential and layers
+class NodeCfg(BaseModel):
+    id: str
+    layer_cfg: Optional[Union[Layers]] = None
+    in_keys: List[str]
+    out_keys: List[str]
+
+class DAGCfg(BaseModel):
+    nodes_cfg: List[NodeCfg]
+    edges: Dict[int, int]
