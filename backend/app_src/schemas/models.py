@@ -57,7 +57,8 @@ class TransformerEncoder(BaseModel):
     ffn_size: int
     dropout: float
 
-Layers = List[Union[
+# TODO: update usages in other places, fine-tune
+Layers = Union[
         BatchNorm2dLayer,
         Conv2DLayer,
         LinearLayer,
@@ -68,7 +69,7 @@ Layers = List[Union[
         PositionalEmbedding,
         Pooling,
         TransformerEncoder
-    ]]
+    ]
 
 class ModelJobRequest(BaseModel):
     forward_type: Union[
@@ -101,13 +102,31 @@ class HistoryResponse(BaseModel):
     exps: List[Experiment]
 
 #----------------------------------
-# TODO: instead of having simple layers, add support to have Sequential and layers
-class NodeCfg(BaseModel):
+# TODO: needs to be updated in dag.py
+class AtomCfg(BaseModel):
+    type: Literal['layer']
     id: str
-    layer_cfg: Optional[Union[Layers]] = None
+    layer_cfg: Optional[Layers] = None
     in_keys: List[str]
     out_keys: List[str]
 
+class ChainCfg(BaseModel):
+    type: Literal['chain']
+    id: str
+    layers_cfg: List[Layers]
+    in_keys: List[str]
+    out_keys: List[str]
+
+class ComponentCfg(BaseModel):
+    type: Literal['component']
+    id: str
+    list_nodes: List[str]
+    edges: List[Tuple[str, str]]
+    in_keys: List[str]
+    out_keys: List[str]
+
+NodeCfg = Union[AtomCfg, ChainCfg, ComponentCfg]    
+
 class DAGCfg(BaseModel):
-    nodes_cfg: List[NodeCfg]
-    edges: Dict[int, int]
+    nodes: List[NodeCfg]
+    edges: List[Tuple[str, str]]
