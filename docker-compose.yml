@@ -44,7 +44,8 @@ services:
       MLFLOW_REGISTRY_URI: http://mlflow:5000
       MLFLOW_PUBLIC_URI:  http://localhost:5000
 
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      # TODO: add later support for local executions, not only jupyter
+      CORS_ALLOWED_ORIGINS: http://localhost:8888
 
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
@@ -55,21 +56,6 @@ services:
       - mlflow
     ports:
       - "8000:8000"
-    networks:
-      - app_net
-    restart: unless-stopped
-
-  front:
-    container_name: front
-    build:
-      context: ./front
-      dockerfile: Dockerfile
-    # environment:
-      # TODO: update backend uri if changed, for now it is http://localhost:8000
-    depends_on:
-      - backend
-    ports:
-      - "3000:80"
     networks:
       - app_net
     restart: unless-stopped
