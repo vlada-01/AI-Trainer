@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Literal, Union, Tuple, Optional, List, Any, Dict
+from pydantic import BaseModel, Field, model_validator
+from typing import Literal, Union, Tuple, Optional, List, Any
 
-from model_src.models.model_builder import AvailableForwardTypes
+from model_src.models.model_types.dag import AvailableNodeTypes
 from model_src.models.layers.layer_factory import AvailableLayers
 
 #----------------------------------
@@ -57,7 +57,7 @@ class TransformerEncoder(BaseModel):
     ffn_size: int
     dropout: float
 
-# TODO: update usages in other places, fine-tune
+# TODO: update usages in other places, fine-tune changed from List[Union] to Union
 Layers = Union[
         BatchNorm2dLayer,
         Conv2DLayer,
@@ -71,13 +71,76 @@ Layers = Union[
         TransformerEncoder
     ]
 
+class InputCfg(BaseModel):
+    type: Literal[AvailableNodeTypes.input]
+    id: str
+    in_keys: List[str]
+    out_keys: List[str]
+
+class LayerCfg(BaseModel):
+    type: Literal[AvailableNodeTypes.layer]
+    id: str
+    layer_cfg: Optional[Layers] = None
+    in_keys: List[str]
+    out_keys: List[str]
+
+class ChainCfg(BaseModel):
+    type: Literal[AvailableNodeTypes.chain]
+    id: str
+    layers_cfg: List[Layers]
+    in_keys: List[str]
+    out_keys: List[str]
+
+class ComponentCfg(BaseModel):
+    type: Literal[AvailableNodeTypes.component]
+    id: str
+    nodes: List[Union[InputCfg, LayerCfg, ChainCfg]]
+    edges: List[Tuple[str, str]]
+    in_keys: List[str]
+    out_keys: List[str]
+    
+    @model_validator(mode='after')
+    def validate_component(self):
+        node_ids = set([node.id for node in self.nodes])
+
+        # node ids must be unique
+        if len(node_ids) != len(self.nodes):
+            raise ValueError(f'Component configuration error: contains duplicates') 
+            
+        # all edge nodes must be in the nodes
+        for u, v in self.edges:
+            if u not in node_ids or v not in node_ids:
+                raise ValueError(f'Component configuration error: Invalid edge ({u},{v})')
+
+NodeCfg = Union[InputCfg, LayerCfg, ChainCfg, ComponentCfg]    
+
+class DAGCfg(BaseModel):
+    node_ids: List[str]
+    edges: List[Tuple[str, str]]
+    # TODO: extend latar so model can return more then one value
+    out_key: str
+
 class ModelJobRequest(BaseModel):
-    forward_type: Union[
-        Literal[AvailableForwardTypes.default],
-        Literal[AvailableForwardTypes.dict]
-    ] 
-    use_torch_layers: Optional[bool] = False
-    layers: Layers
+    nodes: List[NodeCfg]
+    dag: DAGCfg
+
+    @model_validator(mode='after')
+    def validate_graph(self):
+        node_ids = set([id for id in self.dag.node_ids])
+
+        # node ids must be unique
+        if len(node_ids) != len(self.dag.node_ids):
+            raise ValueError(f'DAG configuration error: contains duplicates') 
+        
+        # all nodes must be also present in dag.nodes
+        for node in self.nodes:
+            if node.id not in node_ids:
+                raise ValueError(f'DAG configuration error: Invalid node {node.id}')
+            
+        # all edges must be present in dag.nodes
+        for u, v in self.dag.edges:
+            if u not in node_ids or v not in node_ids:
+                raise ValueError(f'DAG configuration error: Invalid edge ({u},{v})')
 
 class ErrorInfo(BaseModel):
     error_type: str
@@ -102,31 +165,3 @@ class HistoryResponse(BaseModel):
     exps: List[Experiment]
 
 #----------------------------------
-# TODO: needs to be updated in dag.py
-class AtomCfg(BaseModel):
-    type: Literal['layer']
-    id: str
-    layer_cfg: Optional[Layers] = None
-    in_keys: List[str]
-    out_keys: List[str]
-
-class ChainCfg(BaseModel):
-    type: Literal['chain']
-    id: str
-    layers_cfg: List[Layers]
-    in_keys: List[str]
-    out_keys: List[str]
-
-class ComponentCfg(BaseModel):
-    type: Literal['component']
-    id: str
-    list_nodes: List[str]
-    edges: List[Tuple[str, str]]
-    in_keys: List[str]
-    out_keys: List[str]
-
-NodeCfg = Union[AtomCfg, ChainCfg, ComponentCfg]    
-
-class DAGCfg(BaseModel):
-    nodes: List[NodeCfg]
-    edges: List[Tuple[str, str]]

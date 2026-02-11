@@ -1,18 +1,14 @@
-from enum import Enum
 from torch import nn
 import torch
 from pprint import pformat
 
-from model_src.models.layers.layer_factory import build_layers, build_layer
+from model_src.models.layers.layer_factory import build_layer
 from model_src.models.post_processor import build_post_processor
+from model_src.models.model_types.dag import dag_builder
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
-
-class AvailableForwardTypes(str, Enum):
-    default = 'default_forward'
-    dict = 'dict_forward'
 
 def build_predictor(model_cfg, pp_cfg=None):
     log.info('Initialzing predictor builder')
@@ -27,11 +23,8 @@ def build_predictor(model_cfg, pp_cfg=None):
     return predictor
 
 def build_model(cfg):
-    forward_type = cfg.forward_type
-    use_torch_layers = cfg.use_torch_layers
-    layers_cfg = cfg.layers
     log.debug('Initialzing model builder for the cfg:\n%s', pformat(cfg.model_dump()))
-    model = Net(forward_type, layers_cfg, use_torch_layers)
+    model = dag_builder(cfg)
     log.info('Model is prepared successfully')
     return model
 
@@ -67,48 +60,6 @@ def update_model_cfg(old_cfg, new_layers_cfg):
     log.debug('Updating model layers with cfg:\n%s', pformat(new_layers_cfg.model_dump()))
     old_cfg.layers = new_layers_cfg.layers
     return old_cfg
-            
-# TODO: later will need more classes for model types that will have predict method, for example DAG support.
-class Net(nn.Module):
-    def __init__(self, forward_type, layers_cfg, use_torch_layers):
-        super().__init__()
-        self.forward_fn = self.select_forward_fn(forward_type)
-        self.layers = nn.ModuleList(build_layers(layers_cfg, use_torch_layers))
-
-    def forward(self, x):
-        return self.forward_fn(x)
-    
-    def set_pp(self, pp):
-        self.pp = pp
-
-    def get_pp(self):
-        return self.pp
-    
-    def select_forward_fn(self, forward_type):
-        if hasattr(self, forward_type.value):
-            if callable(getattr(self, forward_type.value)):
-                fn = getattr(self, forward_type.value)
-                return fn
-            else:
-                raise ValueError(f'Net only supports callable, but got {forward_type.value}')
-        else:
-            raise ValueError(f'Net does not support forward_type {forward_type.value}')
-        
-    def default_forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
-    
-    # used only for textuals
-    def dict_forward(self, x):
-        X = x['input_ids']
-        attn_mask = x['attention_mask']
-        for layer in self.layers:
-            if attn_mask is None:
-                X = layer(X)
-            else:
-                X, attn_mask = layer(X, attn_mask)
-        return X
 
 # TODO: needs to be updated to have support for the regression
 # TODO: check if pp needs torch no grad

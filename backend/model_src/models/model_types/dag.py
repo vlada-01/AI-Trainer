@@ -1,58 +1,80 @@
+from enum import Enum
 import networkx as nx
 import torch.nn as nn
-from model_src.models.model_builder import build_layer
-from dataclasses import dataclass
+
+from model_src.models.model_types.nodes import InputNode, LayerNode, ChainNode, ComponentNode
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-def construct_dag_model(cfg):
-    log.info('Initializing create nodes spec')
-    nodes_cfg = cfg.nodes_cfg
-    nodes_spec, nodes = create_nodes_spec(nodes_cfg)
-    edges = cfg.edges
-    dag = DAGNet(nodes_spec, nodes, edges)
+class AvailableNodeTypes(Enum):
+    input = 'input'
+    layer = 'layer'
+    chain = 'chain'
+    component = 'component'
+
+NODE_BUILDER_REGISTRY = {
+    AvailableNodeTypes.input: InputNode,
+    AvailableNodeTypes.layer: LayerNode,
+    AvailableNodeTypes.chain: ChainNode,
+    AvailableNodeTypes.component: ComponentNode
+}
+
+def dag_builder(cfg):
+    log.info('Initializing DAG builder')
+    nodes_cfg = cfg.nodes
+    dag_cfg = cfg.dag
+    nodes = initialize_nodes(nodes_cfg)
+    dag = DAGNet(dag_cfg, nodes)
+    log.info('DAG builder completed successfully')
     return dag
 
-def create_nodes_spec(nodes_cfg):
-    nodes_spec = {}
+def initialize_nodes(nodes_cfg):
     nodes = {}
-    for cfg in nodes_cfg:
-        id = cfg.id
-        if cfg.layer is not None:
-            cfg_dict = cfg.layer_cfg.model_dump(exclude={'type', 'predefined'})
-            layer = build_layer(cfg.layer_cfg.type.value, False, cfg_dict)
-            nodes[id] = layer
-        else:
-            # TODO: check if this is good logic
-                nodes[id] = None 
-        in_keys = cfg.in_keys
-        out_keys = cfg.out_keys
-        nodes_spec[id] = NodeSpec(in_keys, out_keys)
-    return nodes_spec, nodes
+    for node_cfg in nodes_cfg:
+        type = node_cfg.type
+        cfg_dict = node_cfg.model_dump(exclude={'type', 'predefined'})
+        node = build_node(type, cfg_dict)
+        nodes[node.id] = node
+    return nodes
 
-@dataclass
-class NodeSpec:
-    id: str
-    in_keys: list[str]
-    out_keys: str
+def build_node(type, cfg_dict):
+    if type not in NODE_BUILDER_REGISTRY:
+        raise ValueError(f'Type "{type}" is not known node type')
+    return NODE_BUILDER_REGISTRY[type](**cfg_dict)
 
 class DAGNet(nn.Module):
-    def __init__(self, nodes_spec, nodes, edges):
+    def __init__(self, dag_cfg, nodes):
         super().__init__()
-        self.nodes_spec = nodes_spec
+
+        self.out_key = dag_cfg.out_key
 
         self.nodes = nn.ModuleDict({k: v for k, v in nodes.items()})
         
+        node_ids = dag_cfg.node_ids
+        edges = dag_cfg.edges
         graph = nx.DiGraph()
-        graph.add_nodes_from([id for id in self.nodes_spec.keys()])
-        graph.add_edges_from([(u, v) for u, v in edges.items()])
+        graph.add_nodes_from([id for id in node_ids])
+        graph.add_edges_from([(u, v) for u, v in edges])
         
         self.check_graph(graph)
         self.sorted_ids = self.topological_sort()
         
-        self.state = {}
+        self.state = dict()
+
+    def forward(self, x_dict):
+        self.state = x_dict
+        for id in self.sorted_ids:
+            in_keys = self.nodes[id].get_in_keys()
+            in_kwargs = {k: self.state[k] for k in in_keys}
+            out = self.nodes[id](**in_kwargs)
+            out = out if isinstance(out, (list, tuple)) else (out, )
+            out_keys = self.nodes[id].get_out_keys()
+            if len(out) != len(out_keys):
+                raise ValueError(f'Out keys length({len(out_keys)}) and outputs len({len(out)}) does not match for id: {id}')
+            self.state.update(dict(zip(out_keys, out)))
+        return self.state[self.out_key]
 
     def check_graph(self, graph):
         if not graph.is_directed():
@@ -67,18 +89,7 @@ class DAGNet(nn.Module):
     def topological_sort(self, graph):
         return list(nx.topological_sort(graph))
     
-    def forward(self, x_dict):
-        self.state = x_dict
-        for id in self.sorted_ids:
-            in_keys = self.nodes_spec.in_keys
-            in_kwargs = {k: self.state[k] for k in in_keys}
-            out = self.nodes[id](**in_kwargs)
-            out = out if isinstance(out, (list, tuple)) else (out, )
-            out_keys = self.nodes_spec.out_keys
-            if len(out) != len(out_keys):
-                raise ValueError(f'Out keys length({len(out_keys)}) and outputs len({len(out)}) does not match for id: {id}')
-            self.state.update(dict(zip(out_keys, out)))
-        return self.state['final']
+    
 
 
 

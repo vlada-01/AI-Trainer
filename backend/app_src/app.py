@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI):
             pass
         del app.state.ctx
 
+# TODO: need to extend server logic to be able to work with multiple clients
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
