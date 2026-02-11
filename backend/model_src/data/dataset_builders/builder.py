@@ -27,14 +27,14 @@ def build_data(cfg):
     log.info(f'Databuilder for provider {provider.value} is prepared successfully')
     train_wrapper = DatasetWrapper(databuilder.get_train())
     val_wrapper = DatasetWrapper(databuilder.get_val())
-    test_wrapper = DatasetWrapper(databuilder.get_test()) if databuilder.get_test() is not None else None
+    test_wrapper = DatasetWrapper(databuilder.get_test())
     
     batch_size = cfg.batch_size
     shuffle = cfg.shuffle
     log.info(f'Initializing DataLoaders for provider: {provider.value}')
     train_dl = DataLoader(train_wrapper, shuffle=shuffle, batch_size=batch_size)
     val_dl = DataLoader(val_wrapper, shuffle=shuffle, batch_size=batch_size)
-    test_dl = DataLoader(test_wrapper, shuffle=shuffle, batch_size=batch_size) if test_wrapper is not None else None
+    test_dl = DataLoader(test_wrapper, shuffle=shuffle, batch_size=batch_size)
     log.info(f'DataLoaders for provider {provider.value} are prepared successfully')
     meta = databuilder.get_meta()
     return train_dl, val_dl, test_dl, meta

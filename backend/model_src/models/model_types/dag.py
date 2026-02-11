@@ -26,12 +26,14 @@ def dag_builder(cfg):
     nodes_cfg = cfg.nodes
     dag_cfg = cfg.dag
     nodes = initialize_nodes(nodes_cfg)
+    log.info('Initializing DAGNet')
     dag = DAGNet(dag_cfg, nodes)
     log.info('DAG builder completed successfully')
     return dag
 
 def initialize_nodes(nodes_cfg):
     nodes = {}
+    log.debug(f'Iniitalizing nodes for cfg:\n%s', {k: v for k, v in nodes_cfg.model_dump().items()})
     for node_cfg in nodes_cfg:
         type = node_cfg.type
         cfg_dict = node_cfg.model_dump(exclude={'type', 'predefined'})
@@ -42,6 +44,7 @@ def initialize_nodes(nodes_cfg):
 def build_node(type, cfg_dict):
     if type not in NODE_BUILDER_REGISTRY:
         raise ValueError(f'Type "{type}" is not known node type')
+    log.info(f'Initializing node of type: {type}')
     return NODE_BUILDER_REGISTRY[type](**cfg_dict)
 
 class DAGNet(nn.Module):
@@ -58,7 +61,9 @@ class DAGNet(nn.Module):
         graph.add_nodes_from([id for id in node_ids])
         graph.add_edges_from([(u, v) for u, v in edges])
         
+        log.info('Checking graph')
         self.check_graph(graph)
+        log.info('Topological sort of the graph')
         self.sorted_ids = self.topological_sort()
         
         self.state = dict()
@@ -78,13 +83,13 @@ class DAGNet(nn.Module):
 
     def check_graph(self, graph):
         if not graph.is_directed():
-            raise ValueError('Configuration error: graph is not directed')
+            raise ValueError('DAG configuration error: graph is not directed')
         
         if not nx.is_weakly_connected(graph):
-            raise ValueError('Configuration error: graph is not connected')
+            raise ValueError('DAG configuration error: graph is not connected')
         
         if not nx.is_directed_acyclic_graph(graph):
-            raise ValueError('Configuration error: graph is not acyclic')
+            raise ValueError('DAG configuration error: graph is not acyclic')
 
     def topological_sort(self, graph):
         return list(nx.topological_sort(graph))

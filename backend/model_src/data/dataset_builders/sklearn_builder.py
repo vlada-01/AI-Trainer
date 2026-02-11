@@ -40,7 +40,7 @@ class SklearnDataBuilder():
         log.info('Initializing Datasets')
         self.train_ds = SklearnDataset(X_train, y_train, transform=train_t, target_transform=train_tt)
         self.val_ds = SklearnDataset(X_val, y_val, transform=val_t, target_transform=val_tt)
-        self.test_ds = SklearnDataset(X_test, y_test, transform=test_t, target_transform=test_tt)  if X_test is not None else None
+        self.test_ds = SklearnDataset(X_test, y_test, transform=test_t, target_transform=test_tt)
 
     def get_train(self):
         return self.train_ds
@@ -95,7 +95,7 @@ class SklearnDataBuilder():
     def get_splits(self, X, y):
         test = self.cfg.test_size
         stratify = y if (self.cfg.stratify and self.meta.get_task() == 'classification') else None
-        X_tmp, X_test, y_tmp, y_test = train_test_split(X, y, test_size=test, stratify=stratify, shuffle=True) if test is not None else (X, None, y, None)
+        X_tmp, X_test, y_tmp, y_test = train_test_split(X, y, test_size=test, stratify=stratify, shuffle=True)
 
         val = self.cfg.val_size
         stratify = y_tmp if (self.cfg.stratify and self.meta.get_task() == 'classification') else None

@@ -19,23 +19,20 @@ class AvailableLayers(str, Enum):
     relu = 'ReLU'
     transformer_encoder = 'TransformerEncoder'
 
-def build_layers(layers_cfg, use_torch_layers):
+def build_layers(layers_cfg):
     layers = []
     for layer in layers_cfg:
         type = layer.type
         log.debug(f'Constructing layer type: {type}')
         cfg_dict = layer.model_dump(exclude={'type', 'predefined'})
-        layers.append(build_layer(type.value, use_torch_layers, cfg_dict))
+        layers.append(build_layer(type.value, cfg_dict))
     return layers
 
-def build_layer(type, use_torch_layers, cfg_dict):
+def build_layer(type, cfg_dict):
     layer_fn = None
-    if use_torch_layers:
-        layer_fn = getattr(nn, type, None)
-    else:
-        layer_fn = getattr(layers, type, None)
-        if layer_fn is None:
-             layer_fn = getattr(nn, type, None)
+    layer_fn = getattr(layers, type, None)
+    if layer_fn is None:
+            layer_fn = getattr(nn, type, None)
     
     if layer_fn is None:
             raise ValueError(f"Unknown layer type: {type}")

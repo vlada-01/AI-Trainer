@@ -46,7 +46,7 @@ class LayerNode(Node):
 class ChainNode(Node):
     def __init__(self, id, in_keys, out_keys, layers_cfg):
         super().__init__(id, in_keys, out_keys)
-        self.exec_node = nn.Sequential(*build_layers(layers_cfg, False))
+        self.exec_node = nn.Sequential(*build_layers(layers_cfg))
 
     def get_executable(self, *xs):
         return self.exec_node(*xs)

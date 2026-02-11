@@ -7,7 +7,6 @@ from common.logger import get_logger
 log = get_logger(__name__)
 
 def get_dataset_info(cfg):
-    name = cfg.name
     builder = load_dataset_builder(cfg.id, cfg.name)
     return builder.info
 

@@ -22,10 +22,10 @@ class LossFnConfig(BaseModel):
     args: Dict[str, Any]
 
 class TrainCfg(BaseModel):
-    device: str = 'cpu'
+    device: Optional[str] = 'cpu'
 
     epochs: int
-    num_of_iters: int
+    num_of_iters: Optional[int] = 1
 
     optimizer: OptimizerConfig
     lr_decay: Optional[LrDecay] = None
@@ -88,6 +88,7 @@ class PostProcessingJobRequest(BaseModel):
 class FtDatasetCfg(BaseModel):
     new_train_transform: Optional[List[TransformStep]] = None
 
+# TODO: update this according to DAG
 class FTLayersDetails(BaseModel):
     type: Union[Literal['backbone', 'new']]
     freeze: bool = False

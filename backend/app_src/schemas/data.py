@@ -15,25 +15,54 @@ class Probability(BaseModel):
 class Rotation(BaseModel):
     alpha: int
 
-class TransformStep(BaseModel):
-    name: Literal[
-         AvailableTransforms.normalize_l1_l2,
-        AvailableTransforms.normalize_mean_std,
-        AvailableTransforms.normalize_min_max,
-        AvailableTransforms.random_horizontal_flip,
-        AvailableTransforms.random_rotation,
-        AvailableTransforms.random_vertical_flip,
-        AvailableTransforms.img_to_tensor,
-        AvailableTransforms.text_to_tensor,
-        AvailableTransforms.to_tensor
-    ]
-    value: Union[bool, L1L2Norm, Probability, Rotation]
+class NormalizeL1L2(BaseModel):
+    name: Literal[AvailableTransforms.normalize_l1_l2]
+    value: L1L2Norm
 
-class TargetTargetTransformStep(BaseModel):
-    name: Literal[
-        AvailableTransforms.to_tensor
-    ]
-    value: Union[bool]
+class NormalizeMeanStd(BaseModel):
+    name: Literal[AvailableTransforms.normalize_mean_std]
+    value: Optional[bool] = True
+
+class NormalizeMinMax(BaseModel):
+    name: Literal[AvailableTransforms.normalize_min_max]
+    value: Optional[bool] = True
+
+class RandomHorizontalFlip(BaseModel):
+    name: Literal[AvailableTransforms.random_horizontal_flip]
+    value: Probability
+
+class RandomVerticalFlip(BaseModel):
+    name: Literal[AvailableTransforms.random_vertical_flip]
+    value: Probability
+
+class RandomRotation(BaseModel):
+    name: Literal[AvailableTransforms.random_rotation]
+    value: Rotation
+
+class ImgToTensor(BaseModel):
+    name: Literal[AvailableTransforms.img_to_tensor]
+
+class TextToTensor(BaseModel):
+    name: Literal[AvailableTransforms.text_to_tensor]
+
+class ToTensor(BaseModel):
+    name: Literal[AvailableTransforms.to_tensor]
+
+TransformStep = Union[
+    NormalizeL1L2,
+    NormalizeMeanStd,
+    NormalizeMinMax,
+    RandomHorizontalFlip,
+    RandomVerticalFlip,
+    RandomRotation,
+    ImgToTensor,
+    TextToTensor,
+    ToTensor
+]
+
+TargetTargetTransformStep = Union[
+    ToTensor
+]
 
 class TransformConfig(BaseModel):
     transform: List[TransformStep]
@@ -42,15 +71,15 @@ class TransformConfig(BaseModel):
 class DataTransforms(BaseModel):
     train: TransformConfig
     valid: TransformConfig
-    test: Optional[TransformConfig] = None
+    test: TransformConfig
 
 class SklearnConfig(BaseModel):
     dataset_provider: Literal[AvailableProviders.sklearn]
     dataset_fn: str
     task: Union[Literal['classification', 'regression']]
-    stratify: bool = True
-    test_size: Optional[float] = None
-    val_size: float = 0.2
+    stratify: Optional[bool] = True
+    test_size: float = Field(..., le=1.0, ge=0.0)
+    val_size: float = Field(..., le=1.0, ge=0.0)
     
     @model_validator(mode="after")
     def check_split_sizes(self):
@@ -72,21 +101,21 @@ class HuggingFaceConfig(BaseModel):
     name: Optional[str] = None
     task: Union[Literal['classification', 'regression']]
     meta_type: Union[
-        Literal[MetaTypes.tabular],
+        Literal[MetaTypes.tabular], #TODO: need to add this support
         Literal[MetaTypes.image],
         Literal[MetaTypes.textual]
         ]
     train_split: str
     val_split: str
-    test_split: Optional[str] = None
-    load_ds_args: Dict[str, Any]
+    test_split: str
+    load_ds_args: Dict[str, Any] #TODO: can be improved
     mapper: Union[
         SimpleMapper
     ]
     
 class DatasetJobRequest(BaseModel):
     data_config: Union[SklearnConfig, HuggingFaceConfig]
-    dataset_transforms: Optional[DataTransforms] = None
+    dataset_transforms: DataTransforms
     batch_size: Optional[int] = 1
     shuffle: Optional[bool] = False
     

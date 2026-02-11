@@ -28,6 +28,7 @@ def build_model(cfg):
     log.info('Model is prepared successfully')
     return model
 
+# TODO: update this function
 def prepare_fine_tune_model(predictor, new_layers_cfg):
     use_torch_layers = new_layers_cfg.use_torch_layers
     layers = new_layers_cfg.layers

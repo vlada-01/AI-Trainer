@@ -26,7 +26,7 @@ class LinearLayer(BaseModel):
     type: Literal[AvailableLayers.linear]
     in_features: int
     out_features: int
-    bias: bool = True
+    bias: Optional[bool] = True
 
 class ReLULayer(BaseModel):
     type: Literal[AvailableLayers.relu]
@@ -80,7 +80,7 @@ class InputCfg(BaseModel):
 class LayerCfg(BaseModel):
     type: Literal[AvailableNodeTypes.layer]
     id: str
-    layer_cfg: Optional[Layers] = None
+    layer_cfg: Layers
     in_keys: List[str]
     out_keys: List[str]
 

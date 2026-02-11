@@ -12,7 +12,6 @@ router = APIRouter(prefix="/models", tags=["models"])
 
 # TODO: need to add check for input/output size connections
 # TODO: need to check for other layer types
-# TODO: add other model types
 @router.post('/prepare_model', response_model=ModelJobResponse)
 async def prepare_model(request: Request, data: ModelJobRequest):
     log.info(f'Requesting model preparation')

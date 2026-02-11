@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, Union, Optional, List, Dict, Any
+from typing import Literal, Union, Optional, Any
 
 class PredictJobRequest(BaseModel):
     run_id: str

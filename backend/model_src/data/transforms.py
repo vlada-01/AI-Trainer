@@ -109,8 +109,8 @@ def assemble_transforms(cfg_dataset_transforms, meta):
         log.debug('Composing val target transforms')
         val_tt = compose_transforms(tt_cfg, meta)
 
-        t_cfg = cfg.test.transform if cfg.test is not None else None
-        tt_cfg = cfg.test.target_transform if cfg.test is not None else None
+        t_cfg = cfg.test.transform
+        tt_cfg = cfg.test.target_transform
         log.debug('Composing test transforms') 
         test_t = compose_transforms(t_cfg, meta)
         log.debug('Composing test target transforms') 
@@ -118,8 +118,6 @@ def assemble_transforms(cfg_dataset_transforms, meta):
     return train_t, train_tt, val_t, val_tt, test_t, test_tt
 
 def compose_transforms(cfg, meta):
-    if cfg is None:
-        return None
     log.debug('Assembling transforms for the cfg:\n%s', pformat(cfg))
     normalized = normalize_params(cfg)
     log.debug('Normalized parameters:\n%s', pformat(normalized))
@@ -133,11 +131,10 @@ def normalize_params(cfg):
     normalized = []
     for step in cfg:
         if step.name in REGISTRY_TRANSFORMS_MAP:
-            if isinstance(step.value, bool):
-                if step.value:
-                    normalized.append((step.name, {}))
+            if hasattr(step, 'value'):
+                normalized.append((step.name, step.value.model_dump()))
             else:
-                normalized.append((step.name, dict(step.value)))
+                normalized.append((step.name, {}))
         else:
             raise ValueError(f"Unknown transform: {step.name}")
     return normalized
