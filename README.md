@@ -1,10 +1,8 @@
 # AI-Trainer
 
-A configuration-driven AI training platform that orchestrates the full machine learning lifecycle: dataset preparation, model training, evaluation, post-processing, experiment tracking, and containerized execution with GPU support.
+A configuration-driven AI training system that orchestrates the full machine learning lifecycle: dataset preparation, model training, evaluation, post-processing, experiment tracking, and containerized execution with GPU support.
 
 The goal of this project is to simulate a **production-grade MLOps system** where ML experiments are fully reproducible and defined via structured configuration files, without hardcoded pipelines.
-
-Note: The front is AI generated
 
 ## Requirements
 
@@ -16,7 +14,7 @@ To run this project locally:
 - NVIDIA Drivers  
 - NVIDIA Container Toolkit  
 
-**How to Start the System** - docker compose up -d --build (Open the http://localhost:3000 in the browser)
+**How to Start the System** - docker compose up -d --build
 
 ---
 
