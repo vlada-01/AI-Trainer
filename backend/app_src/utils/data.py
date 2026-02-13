@@ -11,7 +11,7 @@ def get_dataset_info(cfg):
     return builder.info
 
 # TODO: If dataset does not provide validation set, need to manually split train dataset
-def prepare_dataset(cfg):
+def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
     train, val, _, meta =  build_data(cfg)
     log.info('Prepare dataset is successfullty finished')

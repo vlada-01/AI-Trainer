@@ -6,7 +6,7 @@ import model_src.eval
 
 from app_src.utils.train import retrieve_logged_artficats
 
-from app_src.schemas.data import DatasetJobRequest
+from backend.app_src.schemas.data import DatasetJobRequest
 from app_src.schemas.models import ModelJobRequest
 from app_src.schemas.train import TrainJobRequest, PostProcessingJobRequest
 
@@ -14,7 +14,7 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-def predict(client, req):
+def atomic_predict(client, req):
     log.info('Initializing predict process')
     run_id = req.run_id
 

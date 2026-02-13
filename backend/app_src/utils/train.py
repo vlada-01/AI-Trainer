@@ -13,7 +13,7 @@ from model_src.models.post_processor import build_post_processor
 from model_src.eval import evaluate
 from model_src.prepare_train.prepare_train import prepare_train_params, update_train_cfg
 
-from app_src.schemas.data import DatasetJobRequest
+from backend.app_src.schemas.data import DatasetJobRequest
 from app_src.schemas.models import ModelJobRequest
 from app_src.schemas.train import TrainJobRequest, PostProcessingJobRequest
 
@@ -24,7 +24,7 @@ log = get_logger(__name__)
 mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI")
 
 # TODO: should enable user to load the cfg based on the history run
-def train_model(predictor, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg):
+def atomic_train_model(predictor, train, val, meta, dl_cfg, model_cfg, cfg):
     log.info('Initializing training model process')
     if predictor is None or train is None:
         log.error('Model training can not be initalized because predictor or dataset is not loaded')
@@ -42,7 +42,7 @@ def train_model(predictor, train, val, meta, dl_cfg, model_cfg, train_cfg, cfg):
     mlflow.end_run()
     log.info('Training model process is successfully finished')
 
-def inspect_run(client, data):
+def atomic_inspect_run(client, data):
     log.info('Initializing inspect process')
     run_id = data.run_id
 
@@ -88,7 +88,7 @@ def inspect_run(client, data):
     log.info('Inspect process is successfully finished')
     return result, ctx_dict
 
-def post_process(predictor, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, run_id):
+def atomic_post_process(predictor, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, run_id):
     log.info('Initiazling post processsor process')
     if predictor is None or val_dl is None:
         log.error('Post Processing can not be initalized because predictor or dataset is not loaded')

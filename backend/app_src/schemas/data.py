@@ -112,34 +112,4 @@ class HuggingFaceConfig(BaseModel):
     mapper: Union[
         SimpleMapper
     ]
-    
-class DatasetJobRequest(BaseModel):
-    data_config: Union[SklearnConfig, HuggingFaceConfig]
-    dataset_transforms: DataTransforms
-    batch_size: Optional[int] = 1
-    shuffle: Optional[bool] = False
-    
 
-class ErrorInfo(BaseModel):
-    error_type: str
-    error_message: str
-    traceback: Any
-
-class DatasetJobResponse(BaseModel):
-    id: str
-    status: Literal['pending', 'in_progress', 'success', 'failed']
-    status_details: Optional[Any] = None
-    error: Optional[ErrorInfo] = None
-    created_at: str
-    expires_at: str
-
-class DatasetInfoRequest(BaseModel):
-    dataset_provider: Literal[AvailableProviders.hf]
-    id: str
-    name: Optional[str] = None
-
-class DatasetInfoResponse(BaseModel):
-    status: Union[Literal['success', 'failed']]
-    status_details: Optional[Any] = None
-    error: Optional[ErrorInfo] = None
-    hint: Optional[str] = None
