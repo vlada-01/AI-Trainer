@@ -6,19 +6,22 @@ from datetime import datetime, timezone, timedelta
 from app_src.run_ctx import RunContext
 from app_src.schemas.job_response import JobResponse, ErrorInfo
 
+from app_src.app import jobs_ttl
+
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-JOB_TTL_SECONDS = 60 * 30
-
-async def create_job(ctx: RunContext) -> JobResponse:
+async def create_job(ctx: RunContext, job_type: str) -> JobResponse:
+    if await ctx.is_running():
+        raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.status}')
     job_id = uuid4().hex
     job = JobResponse(
         id=job_id,
+        job_type = job_type,
         status='pending',
         created_at=datetime.now(timezone.utc).isoformat(),
-        expires_at=(datetime.now(timezone.utc) + timedelta(seconds=JOB_TTL_SECONDS)).isoformat()
+        expires_at=(datetime.now(timezone.utc) + timedelta(seconds=jobs_ttl)).isoformat()
     )
 
     async with ctx.jobs_lock:
@@ -29,7 +32,9 @@ async def create_job(ctx: RunContext) -> JobResponse:
 async def get_job(ctx: RunContext, job_id: str) -> JobResponse | None:
     async with ctx.jobs_lock:
         job = ctx.jobs[job_id]
-        return job if job is not None else None
+        if job is None:
+            raise RuntimeError(f'Job with id: ({job_id}) does not exist in the run_ctx with id: ({ctx.run_id})')
+        return job
     
 async def update_job(ctx: RunContext, job_id, **kwargs) -> bool:
     async with ctx.jobs_lock:
@@ -43,17 +48,14 @@ async def update_job(ctx: RunContext, job_id, **kwargs) -> bool:
 async def start_job(ctx: RunContext, job_id: str, fn, params) -> None:
     await update_job(ctx, job_id, status='in_progress')
     try:
-        # TODO: make functions return result, for update_job and ctx_dict for updating the run_ctx
-        result = await asyncio.to_thread(fn, *params)
-        async with ctx.jobs_lock:
-            ctx.update(result)
+        result, ctx_dict = await asyncio.to_thread(fn, *params)
+        await ctx.update(ctx_dict)
 
         await update_job(
             ctx,
             job_id,
             status="success",
-            # update this return message as well
-            status_details="Model prepared successfully",
+            status_details=result
         )
     except Exception as e:
         await update_job(

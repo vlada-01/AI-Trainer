@@ -7,13 +7,13 @@ from app_src.schemas.train import TrainCfg
 from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
 from app_src.schemas.train import Calibration, GlobalThreshold
 
-class DatasetJobRequest(BaseModel):
+class PrepareDatasetJobRequest(BaseModel):
     data_config: Union[SklearnConfig, HuggingFaceConfig]
     dataset_transforms: DataTransforms
     batch_size: Optional[int] = 1
     shuffle: Optional[bool] = False
 
-class ModelJobRequest(BaseModel):
+class PrepareModelJobRequest(BaseModel):
     nodes: List[NodeCfg]
     dag: DAGCfg
 
@@ -35,22 +35,25 @@ class ModelJobRequest(BaseModel):
             if u not in node_ids or v not in node_ids:
                 raise ValueError(f'DAG configuration error: Invalid edge ({u},{v})')
             
-class TrainJobRequest(BaseModel):
+class PrepareTrainJobRequest(BaseModel):
     exp_name: str
     run_name: str
     model_name: str
     log_train_metrics: Optional[bool] = False
     train_cfg: TrainCfg
 
-class RunCfg(BaseModel):
-    dataset_cfg: DatasetJobRequest
-    model_cfg: ModelJobRequest
-    train_cfg: TrainJobRequest
+class ImmediateTrainJobRequest(BaseModel):
+    dataset_cfg: PrepareDatasetJobRequest
+    model_cfg: PrepareModelJobRequest
+    train_cfg: PrepareTrainJobRequest
 
-class InspectRunJobRequest(BaseModel):
+class StartTrainJobRequest(BaseModel):
+    name: None
+
+class InspectJobRequest(BaseModel):
     run_id: str
 
-class PostProcessingJobRequest(BaseModel):
+class PreparePostProcessingJobRequest(BaseModel):
     new_run_name: str
     post_processors: List[Union[
         Calibration,

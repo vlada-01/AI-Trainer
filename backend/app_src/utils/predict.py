@@ -6,9 +6,7 @@ import model_src.eval
 
 from app_src.utils.train import retrieve_logged_artficats
 
-from backend.app_src.schemas.data import DatasetJobRequest
-from app_src.schemas.models import ModelJobRequest
-from app_src.schemas.train import TrainJobRequest, PostProcessingJobRequest
+import app_src.schemas.job_request as requests
 
 from common.logger import get_logger
 
@@ -22,16 +20,16 @@ def atomic_predict(client, req):
     data = retrieve_logged_artficats(client, run_id)
 
     log.info('Rebuilding test Dataloader')
-    _, _, test_dl, meta = build_data(DatasetJobRequest(**data['dataset_cfg']))
+    _, _, test_dl, meta = build_data(requests.PrepareDatasetJobRequest(**data['dataset_cfg']))
 
     log.info('Rebuilding predictor')
-    model_cfg = ModelJobRequest(**data['model_cfg'])
-    pp_cfg = PostProcessingJobRequest(**data['pp_cfg']) if data['pp_cfg'] is not None else None
+    model_cfg = requests.PrepareModelJobRequest(**data['model_cfg'])
+    pp_cfg = requests.PreparePostProcessingJobRequest(**data['pp_cfg']) if data['pp_cfg'] is not None else None
     predictor = build_predictor(model_cfg, pp_cfg)
     predictor.get_model().load_state_dict(data['model_state_data'])
 
     log.info('Rebuilding train params')
-    train_params = prepare_train_params(predictor.get_model_parameters(), meta, TrainJobRequest(**data['train_cfg']).train_cfg)
+    train_params = prepare_train_params(predictor.get_model_parameters(), meta, requests.PrepareTrainJobRequest(**data['train_cfg']).train_cfg)
     device = train_params.device
     metrics = train_params.metrics
     error_analysis = train_params.error_analysis
@@ -39,6 +37,7 @@ def atomic_predict(client, req):
     log.info('Last moment to pray!')
     test_metrics, dict_error_analysis = model_src.eval.predict(predictor, test_dl, device, metrics, error_analysis)
     
+    # TODO: update result, ctx_dict
     result = {
         'test_metrics': dict(test_metrics),
         'test_error_table': dict_error_analysis['df'],
@@ -47,6 +46,6 @@ def atomic_predict(client, req):
         log.info('Adding confusion matrix in the result')
         result['test_confusion_matrix'] = dict_error_analysis['confusion_matrix']
     log.info('Predict proccess is succesfully finished')
-    return result
+    return result, ctx_dict
 
     

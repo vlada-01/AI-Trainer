@@ -20,6 +20,10 @@ mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 registry_uri = os.getenv("MLFLOW_REGISTRY_URI", "http://localhost:5000")
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+cleanup_runs_interval = int(os.getenv("CLEANUP_RUNS_INTERVAL", "60"))
+cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
+jobs_ttl = int(os.getenv("JOBS_TTL", "7200"))
+runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,21 +40,27 @@ async def lifespan(app: FastAPI):
     )
  
     app.state.ctx = ctx
+    ctx.cleanup_runs_task = asyncio.create_task(utils.cleanup_run_loop(ctx, cleanup_runs_interval))
 
     log.info(f'Setting random seeds to {ctx.seed}')
     utils.set_seed(ctx.seed)
     try:
         yield
     finally:
-        # TODO: add clean up
-        # clean up all runs and jobs
-        # ctx.cleanup_task.cancel()
-        try:
-            # await ctx.cleanup_task
-            pass
-        except asyncio.CancelledError:
-            pass
-        # del app.state.ctx
+        runs = list(ctx.runs.values())
+        await asyncio.gather(
+        *(run.cancel_cleanup_task() for run in runs),
+        return_exceptions=True
+        )
+
+        t = getattr(ctx, "cleanup_runs_task", None)
+        if t and not t.done():
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
+        del app.state.ctx
 
 app = FastAPI(lifespan=lifespan)
 

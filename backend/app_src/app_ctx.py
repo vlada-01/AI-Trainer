@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 import asyncio
 import mlflow
 
@@ -12,3 +12,5 @@ class AppContext:
 
     runs: Dict[str, RunContext]
     runs_lock: asyncio.Lock
+
+    cleanup_runs_task: Optional[asyncio.Task] = None

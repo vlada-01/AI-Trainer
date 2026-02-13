@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Request, HTTPException
 import asyncio
+import traceback
 
 import app_src.schemas.job_request as requests
-from app_src.schemas.job_response import JobResponse
+from app_src.schemas.job_response import JobResponse, ErrorInfo
 
 from app_src.utils.data import atomic_prepare_dataset
 from app_src.utils.models import atomic_prepare_predictor
-from app_src.utils.train import atomic_train_model
+from app_src.utils.train import atomic_train_model, atomic_prepare_train, atomic_immediate_train, atomic_fine_tune
 from app_src.utils.predict import atomic_predict
 from app_src.utils.train import atomic_inspect_run
 from app_src.utils.train import atomic_post_process
@@ -22,92 +23,203 @@ log = get_logger(__name__)
 router = APIRouter(prefix="/{run_id}/jobs", tags=["jobs"])
 
 # TODO: Need to test All transformation types
+# TODO: If dataset does not provide validation set, need to manually split train dataset
 @router.post('/prepare-dataset', response_model=JobResponse)
-async def prepare_dataset(request: Request, run_id: str, data: requests.DatasetJobRequest):
-    log.info(f'Requesting data preparation')
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    params = (data)
-    fn = atomic_prepare_dataset
-    asyncio.create_task(start_job(run, job.id, fn, params))
-    return job
+async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareDatasetJobRequest):
+    try:
+        log.info(f'Requesting data preparation')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PrepareDatasetJobRequest')
+        params = (data)
+        fn = atomic_prepare_dataset
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
 # TODO: need to add check for input/output size connections
 # TODO: need to check for other layer types
+# TODO: needs to return back to add some more input types...
 @router.post('/prepare-model', response_model=JobResponse)
-async def prepare_model(request: Request, run_id: str, data: requests.ModelJobRequest):
-    log.info('Requesting model preparation')
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    params = (data)
-    fn = atomic_prepare_predictor
-    asyncio.create_task(start_job(run, job.id, fn, params))
-    return job
+async def prepare_model(request: Request, run_id: str, data: requests.PrepareModelJobRequest):
+    try:
+        log.info('Requesting model preparation')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PrepareModelJobRequest')
+        params = (data)
+        fn = atomic_prepare_predictor
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+    
+@router.post('/prepare-train', response_model=JobResponse)
+async def prepare_train(request: Request, run_id: str, data: requests.PrepareTrainJobRequest):
+    try:
+        log.info('Requesting train preparation')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PrepareTrainJobRequest')
+        # TODO: need to prevent create_job if model or data is not loaded
+        params = await run.get_prepare_train_params() + (data, )
+        fn = atomic_prepare_train
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
-@router.post('/train-model', response_model=JobResponse)
-async def train_model(request: Request, run_id: str, data: requests.TrainJobRequest):
-    log.info('Requesting train model')
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    params = run.get_train_params() + (data,)
-    fn = atomic_train_model
-    asyncio.create_task(start_job(run, job.id, fn, params))
-    return job
+@router.post('/train', response_model=JobResponse)
+async def train_model(request: Request, run_id: str, data: requests.StartTrainJobRequest):
+    try:
+        log.info('Requesting train model')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'StartTrainJobRequest')
+        # TODO: need to prevent create_job if not data is loaded
+        params = await run.get_train_params()
+        fn = atomic_train_model
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+            raise  HTTPException(
+                status_code=500,
+                detail=ErrorInfo(
+                    error_type=type(e).__name__,
+                    error_message=str(e)
+                )
+            )
 
-# TODO: add endpoint for client that has complete cfg,
+@router.post('/immediate-train', response_model=JobResponse)
+async def immediate_train(request: Request, run_id: str, data: requests.ImmediateTrainJobRequest):
+    try:
+        log.info('Requesting train model')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'TrainJobRequest')
+        params = data
+        fn = atomic_immediate_train
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+            raise  HTTPException(
+                status_code=500,
+                detail=ErrorInfo(
+                    error_type=type(e).__name__,
+                    error_message=str(e)
+                )
+            )
 
 @router.post('/inspect-run', response_model=JobResponse)
-async def inspect_run(request: Request, run_id: str, data: requests.InspectRunJobRequest):
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    params = (ctx.mlflow_client, data)
-    fn = atomic_inspect_run
-    asyncio.create_task(atomic_inspect_run(ctx, job.id, fn, params))
-    return job
+async def inspect_run(request: Request, run_id: str, data: requests.InspectJobRequest):
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'InspectJobRequest')
+        params = (ctx.mlflow_client, data)
+        fn = atomic_inspect_run
+        asyncio.create_task(start_job(ctx, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
-# TODO: update me
 @router.post('/post-process-run', response_model=JobResponse)
-async def post_process(request: Request, run_id: str, data: requests.PostProcessingJobRequest):
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    # params = 
-    asyncio.create_task(atomic_post_process(ctx, job.id, data))
-    return job
+async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PreparePostProcessingJobRequest')
+        params = (data)
+        fn = atomic_post_process
+        asyncio.create_task(start_job(ctx, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
-# TODO: update me
 @router.post('/fine_tune_run', response_model=JobResponse)
 async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
-    ctx = request.app.state.ctx
-    job = await create_job(ctx)
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'FineTuneJobRequest')
+        params = (data)
+        fn = atomic_fine_tune
+        asyncio.create_task(start_job(ctx, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
-    # asyncio.create_task(run_fine_tune(ctx, job.id, data))
-    return job
-
-
-# TODO: do I need this
 @router.post('/final-evaluation', response_model=JobResponse)
 async def final_evaluation(request: Request, run_id: str, data: requests.PredictJobRequest):
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await create_job(run)
-    params = (data)
-    fn = atomic_predict
-    asyncio.create_task(start_job(run, job.id, fn, params))
-    return job
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PredictJobRequest')
+        params = (data)
+        fn = atomic_predict
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
 @router.get('/{job_id}', response_model=JobResponse)
 async def job_status(request: Request, run_id: str, job_id: str):
-    ctx = request.app.state.ctx
-    run = await get_run(ctx, run_id)
-    job = await get_job(run, job_id)
-    if job is None:
-        raise HTTPException(status_code=404, detail={"error": "job_not_found"})
-    return job
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await get_job(run, job_id)
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=404,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
 # TODO: big problem for not being able to cancel task once it is started, for now all jobs are atomic
 # @router.delete('/{job_id}/cancel', response_model=JobResponse)

@@ -20,7 +20,7 @@ def get_ds_info(request: Request, data: DatasetInfoRequest):
             status_details=ds_info_dict
         )
     except Exception as e:
-        log.info(f'{type(e).__name__}, {str(e)}')
+        log.error(f'{type(e).__name__}, {str(e)}')
         return DatasetInfoResponse(
             status='failed',
             status_details='Failed to load Dataset info',

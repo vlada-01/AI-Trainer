@@ -43,6 +43,12 @@ services:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_REGISTRY_URI: http://mlflow:5000
       MLFLOW_PUBLIC_URI:  http://localhost:5000
+      
+      CLEANUP_RUNS_INTERVAL: "60"
+      CLEANUP_JOBS_INTERVAL: "60"
+      JOBS_TTL: "7200"
+      RUNS_INACTIVITY: "1800"
+
 
       # TODO: add later support for local executions, not only jupyter
       CORS_ALLOWED_ORIGINS: http://localhost:8888

@@ -23,6 +23,9 @@ log = get_logger(__name__)
 
 mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI")
 
+def atomic_immediate_train(cfg1,cfg2,cfg3):
+    pass
+
 # TODO: should enable user to load the cfg based on the history run
 def atomic_train_model(predictor, train, val, meta, dl_cfg, model_cfg, cfg):
     log.info('Initializing training model process')
@@ -142,7 +145,7 @@ def atomic_post_process(predictor, val_dl, meta, dl_cfg, model_cfg, train_cfg, p
     log.info('Post processor is successfully finished')
     return result, ctx_dict
 
-def fine_tune(predictor, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id):
+def atomic_fine_tune(predictor, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, pp_cfg, ft_cfg, run_id):
     log.info('Initiazling fine tune process')
     if predictor is None or train_dl is None:
         log.error('Post Processing can not be initalized because predictor or dataset is not loaded')
@@ -186,6 +189,8 @@ def fine_tune(predictor, train_dl, val_dl, meta, dl_cfg, model_cfg, train_cfg, p
     mlflow.end_run()
     log.info('Fine tune is successfully finished')
 
+
+# TODO: update this function to store results better
 def store_artifacts(model, meta, dl_cfg, model_cfg, train_cfg, pp_cfg=None):
     log.info('Initiazling artifacts storing')
     with tempfile.TemporaryDirectory() as td:
@@ -235,6 +240,7 @@ def log_train_cfg(train_cfg, td):
     log.info(f'storing train params artifact on the path: {train_path}')
     mlflow.log_artifact(train_path, artifact_path='train')
 
+# TODO: update this function to store results better
 def retrieve_logged_artficats(client, run_id):
     model_path = client.download_artifacts(
         run_id,

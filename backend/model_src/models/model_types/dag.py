@@ -33,7 +33,7 @@ def dag_builder(cfg):
 
 def initialize_nodes(nodes_cfg):
     nodes = {}
-    log.debug(f'Iniitalizing nodes for cfg:\n%s', {k: v for k, v in nodes_cfg.model_dump().items()})
+    log.debug('Iniitalizing nodes for cfg:\n%s', {k: v for k, v in nodes_cfg.model_dump().items()})
     for node_cfg in nodes_cfg:
         type = node_cfg.type
         cfg_dict = node_cfg.model_dump(exclude={'type', 'predefined'})
@@ -65,6 +65,7 @@ class DAGNet(nn.Module):
         self.check_graph(graph)
         log.info('Topological sort of the graph')
         self.sorted_ids = self.topological_sort()
+        log.debug('Topological sort:\n%s', self.sorted_ids)
         
         self.state = dict()
 

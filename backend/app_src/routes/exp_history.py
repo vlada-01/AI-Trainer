@@ -1,6 +1,8 @@
+import traceback
 from fastapi import APIRouter, Request, HTTPException
 
 from app_src.schemas.history import HistoryResponse, Experiment
+from app_src.schemas.job_response import ErrorInfo
 
 from app_src.app import mlflow_public_uri
 
@@ -28,9 +30,10 @@ def history(request: Request):
         )
     except Exception as e:
         raise HTTPException(
-            status_code=404,
-            detail={
-                "error_type": type(e).__name__,
-                "error_message":str(e)
-                }
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e),
+                traceback=traceback.format_exc()
             )
+        )

@@ -1,72 +1,123 @@
 import asyncio
 from torch.utils.data import DataLoader
 from uuid import uuid4
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Union, Optional
+from datetime import datetime, timezone
+from typing import Dict, Optional, Literal
 
-from app_src.schemas.runs import RunCtxResponse
-
+from app_src.schemas.job_response import JobResponse
 import app_src.schemas.job_request as requests
 
 from model_src.data.metas.meta import MetaData
 from model_src.models.model_builder import Predictor
+from model_src.prepare_train.prepare_train import TrainParams
+
+from app_src.app import runs_inactivity
+from app_src.app import cleanup_jobs_interval
 
 class RunContext:
     def __init__(self):
         self.run_id: str = uuid4().hex
-        self.status: str = 'draft' 
+        self.status: Literal['draft', 'ready', 'queued', 'running', 'done', 'failed'] = 'draft' 
         self.required_steps: list[str] = ['prepare_dataset, prepare_model, prepare_train']
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc)
         self.created_at: str = now
         self.updated_at: str = now
-        self.jobs: Dict[str, Union[
-            requests.DatasetJobRequest,
-            requests.ModelJobRequest,
-            requests.TrainJobRequest
-            ]
-        ]
+        self.jobs: Dict[str, JobResponse]
         self.jobs_lock: asyncio.Lock
         
-        # TODO: add later
-        # ?CLEAN_UP_INTERVAL = 60
-        # self.cleanup_task: asyncio.Task = asyncio.create_task(utils.cleanup_jobs_loop(ctx, CLEAN_UP_INTERVAL))
+        self.cleanup_jobs_interval = cleanup_jobs_interval
+        self.cleanup_task: asyncio.Task = asyncio.create_task(self.cleanup_task_loop())
         
-        self.predictor: Optional[Predictor] = None
+        # runtime objects required for run
         self.train: Optional[DataLoader] = None
         self.val: Optional[DataLoader] = None
         self.test: Optional[DataLoader] = None
         self.meta: Optional[MetaData] = None
+        self.predictor: Optional[Predictor] = None
+        self.train_params: Optional[TrainParams] = None
 
-        # cache
-        self.cached_model_cfg: Optional[requests.ModelJobRequest] = None
-        self.cached_pp_cfg: Optional[requests.PostProcessingJobRequest] = None
-        self.cached_dl_cfg: Optional[requests.DatasetJobRequest] = None
-        self.cached_train_cfg: Optional[requests.TrainJobRequest] = None
-        self.cached_run_id: Optional[str] = None
+        # cached cfgs, stored as artifacts in the end of run
+        self.cached_model_cfg: Optional[requests.PrepareModelJobRequest] = None
+        self.cached_pp_cfg: Optional[requests.PreparePostProcessingJobRequest] = None
+        self.cached_dl_cfg: Optional[requests.PrepareDatasetJobRequest] = None
+        self.cached_train_cfg: Optional[requests.PrepareTrainJobRequest] = None
+        self.cached_mlflow_run_id: Optional[str] = None
 
-    def get_info(self):
-        kwargs = {
-            'run_id': self.run_id,
-            'status': self.status,
-            'required_steps': self.required_steps,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-        }
-        return RunCtxResponse(**kwargs)
+    async def get_info(self):
+        async with self.jobs_lock:
+            jobs = [v for v in self.jobs.values()]
+            kwargs = {
+                'run_id': self.run_id,
+                'status': self.status,
+                'required_steps': self.required_steps,
+                'jobs_status': jobs,
+                'created_at': self.created_at.isoformat(),
+                'updated_at': self.updated_at.isoformat(),
+            }
+            return kwargs
     
-    def update(self, result):
-        for k, v in result.items():
-                if hasattr(self, k):
-                    setattr(self, k, v)
-                else:
-                    raise ValueError(f'Field {k} does not exist in the AppContext')
-                
-    def get_train_params(self):
-         return (
-              self.predictor,
-              self.train,
-              self.val,
-              self.meta,
-              self.cached_dl_cfg,
-              self.cached_model_cfg
-         )
+    async def update(self, result):
+        async with self.jobs_lock:
+            for k, v in result.items():
+                    if hasattr(self, k):
+                        setattr(self, k, v)
+                    else:
+                        # TODO: update this crap, because some fields might be updated before exception
+                        raise ValueError(f'Field {k} does not exist in the AppContext')
+            self.updated_at = datetime.now(timezone.utc)
+            # TODO: need to implement these two functions
+            # self.update_status()
+            # self.update_required_steps()
+
+    async def get_prepare_train_params(self):
+        async with self.jobs_lock:
+            return (self.predictor, self.meta)
+
+    async def get_train_params(self):
+         async with self.jobs_lock:
+            return (
+                self.predictor,
+                self.train,
+                self.val,
+                self.meta,
+                self.cached_dl_cfg,
+                self.cached_model_cfg
+            )
+    
+    async def is_running(self):
+        async with self.jobs_lock:
+            return self.status == 'running'
+    
+    async def is_cleanable(self):
+        async with self.jobs_lock:
+            status_check = self.status in ('queued', 'running', 'done', 'failed')
+
+            now = datetime.now(timezone.utc)
+            update_check = (now - self.updated_at) > runs_inactivity
+            
+            return status_check or update_check
+
+    async def cleanup_task_loop(self):
+        while True:
+            await asyncio.sleep(self.cleanup_jobs_interval)
+            now = datetime.now(timezone.utc)
+
+            async with self.jobs_lock:
+                expired_ids = [
+                    job_id
+                    for job_id, job in self.jobs.items()
+                    if (job.expires_at and datetime.fromisoformat(job.expires_at) <= now) or job.status == 'success'
+                ]
+                for job_id in expired_ids:
+                    del self.jobs[job_id]
+
+    async def cancel_cleanup_task(self):
+        t = getattr(self, "cleanup_task", None)
+        if not t or t.done():
+            return
+        t.cancel()
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
+        

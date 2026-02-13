@@ -10,14 +10,17 @@ def get_dataset_info(cfg):
     builder = load_dataset_builder(cfg.id, cfg.name)
     return builder.info
 
-# TODO: If dataset does not provide validation set, need to manually split train dataset
 def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
     train, val, _, meta =  build_data(cfg)
     log.info('Prepare dataset is successfullty finished')
-    return {
+    ctx_dict = {
         'train': train,
         'val': val,
         'meta': meta,
-        'cfg': cfg
+        'cached_dl_cfg': cfg
     }
+    result = {
+        'sample_size': meta.get_necessary_sizes()
+    }
+    return result, ctx_dict

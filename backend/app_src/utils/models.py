@@ -4,12 +4,14 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-# TODO: needs to return back to add some more input types...
+
 def atomic_prepare_predictor(cfg):
     log.info('Initializing prepare_predictor process')
     predictor = build_predictor(cfg)
     log.info('Prepare Predictor is successfully finished')
-    return {
+    ctx_dict = {
         'predictor': predictor,
-        'cfg': cfg
+        'cached_model_cfg': cfg
     }
+    result = ''
+    return result, ctx_dict
