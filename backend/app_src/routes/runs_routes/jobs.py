@@ -1,20 +1,17 @@
 from fastapi import APIRouter, Request, HTTPException
 import asyncio
-import traceback
 
 import app_src.schemas.job_request as requests
 from app_src.schemas.job_response import JobResponse, ErrorInfo
 
-from app_src.utils.data import atomic_prepare_dataset
-from app_src.utils.models import atomic_prepare_predictor
-from app_src.utils.train import atomic_train_model, atomic_prepare_train, atomic_immediate_train, atomic_fine_tune
-from app_src.utils.predict import atomic_predict
-from app_src.utils.train import atomic_inspect_run
-from app_src.utils.train import atomic_post_process
+import app_src.services.jobs.tasks.prepare as prepare
+from app_src.services.jobs.tasks.inspect import atomic_inspect_run
+from app_src.services.jobs.tasks.train import atomic_train_model
+from app_src.services.jobs.tasks.final_evaluation import atomic_predict
 
-from app_src.services.jobs import create_job, get_job, start_job
+from backend.app_src.services.jobs.jobs import create_job, get_job, start_job
 
-from app_src.services.runs import get_run
+from app_src.services.runs.runs import get_run
 
 from common.logger import get_logger
 
@@ -22,8 +19,6 @@ log = get_logger(__name__)
 
 router = APIRouter(prefix="/{run_id}/jobs", tags=["jobs"])
 
-# TODO: Need to test All transformation types
-# TODO: If dataset does not provide validation set, need to manually split train dataset
 @router.post('/prepare-dataset', response_model=JobResponse)
 async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareDatasetJobRequest):
     try:
@@ -32,7 +27,7 @@ async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareD
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'PrepareDatasetJobRequest')
         params = (data)
-        fn = atomic_prepare_dataset
+        fn = prepare.atomic_prepare_dataset
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
@@ -44,9 +39,6 @@ async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareD
             )
         )
 
-# TODO: need to add check for input/output size connections
-# TODO: need to check for other layer types
-# TODO: needs to return back to add some more input types...
 @router.post('/prepare-model', response_model=JobResponse)
 async def prepare_model(request: Request, run_id: str, data: requests.PrepareModelJobRequest):
     try:
@@ -55,7 +47,7 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'PrepareModelJobRequest')
         params = (data)
-        fn = atomic_prepare_predictor
+        fn = prepare.atomic_prepare_predictor
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
@@ -67,16 +59,37 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
             )
         )
     
-@router.post('/prepare-train', response_model=JobResponse)
+@router.post('/prepare-train-params', response_model=JobResponse)
 async def prepare_train(request: Request, run_id: str, data: requests.PrepareTrainJobRequest):
     try:
-        log.info('Requesting train preparation')
+        log.info('Requesting train parameters preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'PrepareTrainJobRequest')
         # TODO: need to prevent create_job if model or data is not loaded
         params = await run.get_prepare_train_params() + (data, )
-        fn = atomic_prepare_train
+        fn = prepare.atomic_prepare_train_params
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+
+@router.post('/prepare-complete-train', response_model=JobResponse)
+async def prepare_train(request: Request, run_id: str, data: requests.PrepareCompleteTrainJobRequest):
+    try:
+        log.info('Requesting complete train preparation')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await create_job(run, 'PrepareCompleteTrainJobRequest')
+        # TODO: need to prevent create_job if model or data is not loaded
+        params = (data)
+        fn = prepare.atomic_prepare_complete_train
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
@@ -96,28 +109,8 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'StartTrainJobRequest')
         # TODO: need to prevent create_job if not data is loaded
-        params = await run.get_train_params()
+        params = await run.get_train_params() + (job.id, )
         fn = atomic_train_model
-        asyncio.create_task(start_job(run, job.id, fn, params))
-        return job
-    except Exception as e:
-            raise  HTTPException(
-                status_code=500,
-                detail=ErrorInfo(
-                    error_type=type(e).__name__,
-                    error_message=str(e)
-                )
-            )
-
-@router.post('/immediate-train', response_model=JobResponse)
-async def immediate_train(request: Request, run_id: str, data: requests.ImmediateTrainJobRequest):
-    try:
-        log.info('Requesting train model')
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await create_job(run, 'TrainJobRequest')
-        params = data
-        fn = atomic_immediate_train
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
@@ -135,7 +128,7 @@ async def inspect_run(request: Request, run_id: str, data: requests.InspectJobRe
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'InspectJobRequest')
-        params = (ctx.mlflow_client, data)
+        params = (data)
         fn = atomic_inspect_run
         asyncio.create_task(start_job(ctx, job.id, fn, params))
         return job

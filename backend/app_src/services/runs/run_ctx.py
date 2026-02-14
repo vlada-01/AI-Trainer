@@ -22,8 +22,9 @@ class RunContext:
         now = datetime.now(timezone.utc)
         self.created_at: str = now
         self.updated_at: str = now
+
         self.jobs: Dict[str, JobResponse]
-        self.jobs_lock: asyncio.Lock
+        self.run_ctx_lock: asyncio.Lock
         
         self.cleanup_jobs_interval = cleanup_jobs_interval
         self.cleanup_task: asyncio.Task = asyncio.create_task(self.cleanup_task_loop())
@@ -44,7 +45,7 @@ class RunContext:
         self.cached_mlflow_run_id: Optional[str] = None
 
     async def get_info(self):
-        async with self.jobs_lock:
+        async with self.run_ctx_lock:
             jobs = [v for v in self.jobs.values()]
             kwargs = {
                 'run_id': self.run_id,
@@ -57,7 +58,7 @@ class RunContext:
             return kwargs
     
     async def update(self, result):
-        async with self.jobs_lock:
+        async with self.run_ctx_lock:
             for k, v in result.items():
                     if hasattr(self, k):
                         setattr(self, k, v)
@@ -70,11 +71,11 @@ class RunContext:
             # self.update_required_steps()
 
     async def get_prepare_train_params(self):
-        async with self.jobs_lock:
+        async with self.run_ctx_lock:
             return (self.predictor, self.meta)
 
     async def get_train_params(self):
-         async with self.jobs_lock:
+         async with self.run_ctx_lock:
             return (
                 self.predictor,
                 self.train,
@@ -85,11 +86,11 @@ class RunContext:
             )
     
     async def is_running(self):
-        async with self.jobs_lock:
+        async with self.run_ctx_lock:
             return self.status == 'running'
     
     async def is_cleanable(self):
-        async with self.jobs_lock:
+        async with self.run_ctx_lock:
             status_check = self.status in ('queued', 'running', 'done', 'failed')
 
             now = datetime.now(timezone.utc)
@@ -102,7 +103,7 @@ class RunContext:
             await asyncio.sleep(self.cleanup_jobs_interval)
             now = datetime.now(timezone.utc)
 
-            async with self.jobs_lock:
+            async with self.run_ctx_lock:
                 expired_ids = [
                     job_id
                     for job_id, job in self.jobs.items()
@@ -120,4 +121,3 @@ class RunContext:
             await t
         except asyncio.CancelledError:
             pass
-        

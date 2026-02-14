@@ -2,7 +2,7 @@ import traceback
 from fastapi import APIRouter, Request, HTTPException
 
 from app_src.schemas.runs import NewRunCfg, RunCtxResponse, ErrorInfo
-from app_src.services.runs import create_run, get_run
+from app_src.services.runs.runs import create_run, get_run
 
 from app_src.routes.runs_routes.jobs import router as jobs_router
 

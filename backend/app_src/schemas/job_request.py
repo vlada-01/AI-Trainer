@@ -42,7 +42,7 @@ class PrepareTrainJobRequest(BaseModel):
     log_train_metrics: Optional[bool] = False
     train_cfg: TrainCfg
 
-class ImmediateTrainJobRequest(BaseModel):
+class PrepareCompleteTrainJobRequest(BaseModel):
     dataset_cfg: PrepareDatasetJobRequest
     model_cfg: PrepareModelJobRequest
     train_cfg: PrepareTrainJobRequest

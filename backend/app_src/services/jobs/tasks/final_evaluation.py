@@ -1,4 +1,3 @@
-
 from model_src.data.dataset_builders.builder import build_data
 from model_src.models.model_builder import build_predictor
 from model_src.prepare_train.prepare_train import prepare_train_params
@@ -47,5 +46,3 @@ def atomic_predict(client, req):
         result['test_confusion_matrix'] = dict_error_analysis['confusion_matrix']
     log.info('Predict proccess is succesfully finished')
     return result, ctx_dict
-
-    

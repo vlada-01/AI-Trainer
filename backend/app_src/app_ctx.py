@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import asyncio
 import mlflow
 
-from app_src.run_ctx import RunContext
+from app_src.services.runs.run_ctx import RunContext
 
 @dataclass
 class AppContext:
