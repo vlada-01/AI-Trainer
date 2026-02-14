@@ -4,57 +4,70 @@ class AvailableRunTypes(Enum):
     base = 'base'
     fine_tune = 'fine_tune'
     post_process = 'post_process'
+    final_evaluation = 'final_evaluation'
+
+# TODO: need to update this crap, final_eval, pp, and fine tune
 
 class StateCode(Enum):
     draft = 0
-    ds_prepared = 1
-    model_prepared = 2
-    train_params_prepared = 3
-    cfg_ready = 4
-    fine_tune_prepared = 5
-    pp_prepared = 6
-    running = 7
-    final_eval = 8
-    done = 9
-    failed = 10
+    prepare_ds = 1
+    prepare_model = 2
+    ready_for_train = 3
+    prepare_fine_tune = 4
+    prepare_pp = 5
+    training = 6
+    final_eval = 7
+    done = 8
+    failed = 9 #TODO: not used 
 
 def get_base_run_states():
     BASE_RUN_STATES = {
-        StateCode.draft: {StateCode.ds_prepared, StateCode.cfg_ready},
-        StateCode.ds_prepared: {StateCode.model_prepared},
-        StateCode.model_prepared: {StateCode.train_params_prepared},
-        StateCode.train_params_prepared: {StateCode.cfg_ready},
-        StateCode.cfg_ready: {StateCode.running},
-        StateCode.running: {StateCode.final_eval, StateCode.failed},
-        StateCode.final_eval: {StateCode.done},
+        StateCode.draft: {StateCode.prepare_ds, StateCode.ready_for_train},
+        StateCode.prepare_ds: {StateCode.prepare_model},
+        StateCode.prepare_model: {StateCode.ready_for_train},
+        StateCode.ready_for_train: {StateCode.training},
+        StateCode.training: {StateCode.done, StateCode.failed},
+        StateCode.done: set(),
         StateCode.failed: set()
     }
     return BASE_RUN_STATES
 
+# TODO: these two should first load from run and then update
 def get_fine_tune_states():
     FINE_TUNE_RUN_STATES = {
-        StateCode.draft: {StateCode.cfg_ready},
-        StateCode.fine_tune_prepared: {StateCode.running},
-        StateCode.running: {StateCode.final_eval, StateCode.failed},
-        StateCode.final_eval: {StateCode.done},
+        StateCode.draft: {StateCode.prepare_fine_tune},
+        StateCode.prepare_fine_tune: {StateCode.training},
+        StateCode.training: {StateCode.done, StateCode.failed},
+        StateCode.done: set(),
         StateCode.failed: set()
     }
     return FINE_TUNE_RUN_STATES
 
 def get_post_process_run_states():
     POST_PROCESS_RUN_STATES = {
-        StateCode.draft: {StateCode.cfg_ready},
-        StateCode.pp_prepared: {StateCode.running},
-        StateCode.running: {StateCode.final_eval, StateCode.failed},
-        StateCode.final_eval: {StateCode.done},
+        StateCode.draft: {StateCode.prepare_pp},
+        StateCode.prepare_pp: {StateCode.training},
+        StateCode.training: {StateCode.done, StateCode.failed},
+        StateCode.done: set(),
         StateCode.failed: set()
     }
     return POST_PROCESS_RUN_STATES
 
+def get_final_evaluation_run_states():
+    FINAL_EVAL_RUN_STATES = {
+        StateCode.draft: {StateCode.prepare_pp},
+        StateCode.prepare_pp: {StateCode.final_eval},
+        StateCode.final_eval: {StateCode.done, StateCode.failed},
+        StateCode.done: set(),
+        StateCode.failed: set()
+    }
+    return FINAL_EVAL_RUN_STATES
+
 RUN_TYPE_MAPPING = {
     AvailableRunTypes.base: get_base_run_states,
     AvailableRunTypes.fine_tune: get_fine_tune_states,
-    AvailableRunTypes.post_process: get_post_process_run_states
+    AvailableRunTypes.post_process: get_post_process_run_states,
+    AvailableRunTypes.final_evaluation:  get_final_evaluation_run_states
 }
 
 def get_state_mappings(run_type):

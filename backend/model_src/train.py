@@ -1,20 +1,15 @@
 import mlflow
-from pprint import pformat
 
-from model_src.prepare_train.prepare_train import prepare_train_params
 from model_src.eval import evaluate
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-def train_model(predictor, train, val, meta, cfg):
-    train_cfg = cfg.train_cfg
-    log.debug('Preparing Training Params for cfg:\n%s', pformat(train_cfg.model_dump()))
-    train_params = prepare_train_params(predictor.get_model_parameters(), meta, train_cfg)
-    log_train_params(train_cfg)
+def train_model(predictor, train, val, train_params):
+    log_train_params(train_params.train_cfg)
 
-    log_train_metrics = cfg.log_train_metrics
+    log_train_metrics = train_params.train_cfg.log_train_metrics
     
     predictor = start_train(predictor, train, val, train_params, log_train_metrics)
     return predictor

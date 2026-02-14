@@ -8,7 +8,7 @@ from app_src.services.runs.state_manager import AvailableRunTypes, StateCode
 class RunCtxResponse(BaseModel):
     id: str
     state: StateCode
-    required_steps: Optional[List[Literal['dataset, predictor, train_params']]] = None
+    # required_steps: Optional[List[Literal['dataset, predictor, train_params']]] = None
     status_details: Optional[Any] = None
     jobs: Optional[List[JobResponse]] = None
     error: Optional[ErrorInfo] = None
@@ -16,8 +16,4 @@ class RunCtxResponse(BaseModel):
     updated_at: str
 
 class NewRunCfg(BaseModel):
-    run_type: Literal[
-        AvailableRunTypes.base,
-        AvailableRunTypes.fine_tune,
-        AvailableRunTypes.post_process
-        ]
+    run_type: AvailableRunTypes

@@ -23,8 +23,8 @@ class RunContext:
         self.run_id: str = uuid4().hex
         self.state: StateCode = StateCode.draft
         # self.required_steps: List[]
-        # TODO: update this
-        self.required_steps: List[str] = ['prepare_dataset, prepare_model, prepare_train']
+        # # TODO: update this
+        # self.required_steps: List[str] = ['prepare_dataset, prepare_model, prepare_train']
         now = datetime.now(timezone.utc)
         self.created_at: str = now
         self.updated_at: str = now
@@ -56,14 +56,18 @@ class RunContext:
             kwargs = {
                 'run_id': self.run_id,
                 'run_type': self.run_type,
-                'state': self.state,
-                'required_steps': self.required_steps,
+                'state': self.state.name,
+                # 'required_steps': self.required_steps,
                 'jobs_status': jobs,
                 'created_at': self.created_at.isoformat(),
                 'updated_at': self.updated_at.isoformat(),
             }
             return kwargs
-    
+
+    async def is_valid_to_add(self, status_code):
+        async with self.run_ctx_lock:
+            return status_code in self.state_mapping[self.state] 
+
     async def update(self, result):
         async with self.run_ctx_lock:
             for k, v in result.items():
@@ -73,9 +77,12 @@ class RunContext:
                         # TODO: update this crap, because some fields might be updated before exception
                         raise ValueError(f'Field {k} does not exist in the AppContext')
             self.updated_at = datetime.now(timezone.utc)
-            # TODO: need to implement these two functions
-            # self.update_status()
-            # self.update_required_steps()
+            # TODO: need to implement required_steps
+
+    async def move_state(self, job_id):
+        async with self.run_ctx_lock:
+            job = self.jobs[job_id]
+            self.state = self.state_mapping[job.job_type]
 
     async def get_prepare_train_params(self):
         async with self.run_ctx_lock:
@@ -88,24 +95,29 @@ class RunContext:
                 self.train,
                 self.val,
                 self.meta,
+                self.train_params,
                 self.cached_dl_cfg,
-                self.cached_model_cfg
+                self.cached_model_cfg,
+                self.cached_train_cfg,
             )
-    
-    # TODO: check me
-    async def is_valid_to_add(self, status_code):
+         
+    async def get_final_eval_params(self):
         async with self.run_ctx_lock:
-            return self.state.value <= status_code
+            return (
+                self.predictor,
+                self.test,
+                self.train_params
+            )
     
     async def is_cleanable(self):
         async with self.run_ctx_lock:
-            # TODO: update me
-            state_check = self.state in ('queued', 'running', 'done', 'failed')
+            finished = self.state in (StateCode.done, StateCode.failed)
+            still_running = self.state == StateCode.training
 
             now = datetime.now(timezone.utc)
             update_check = (now - self.updated_at) > runs_inactivity
             
-            return state_check or update_check
+            return finished or (not still_running and update_check)
 
     async def cleanup_task_loop(self):
         while True:

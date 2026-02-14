@@ -6,20 +6,22 @@ from datetime import datetime, timezone, timedelta
 from app_src.services.runs.run_ctx import RunContext
 from app_src.schemas.job_response import JobResponse, ErrorInfo
 
+from app_src.services.runs.state_manager import StateCode
+
 from app_src.app import jobs_ttl
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-async def create_job(ctx: RunContext, job_type: str) -> JobResponse:
+async def try_create_job(ctx: RunContext, state_code: StateCode) -> JobResponse:
     # TODO: change this to get statusCode
-    if await ctx.is_valid_to_add():
-        raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.status}')
+    if await ctx.is_valid_to_add(state_code):
+        raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
     job_id = uuid4().hex
     job = JobResponse(
         id=job_id,
-        job_type = job_type,
+        job_type = state_code,
         status='pending',
         created_at=datetime.now(timezone.utc).isoformat(),
         expires_at=(datetime.now(timezone.utc) + timedelta(seconds=jobs_ttl)).isoformat()
@@ -36,7 +38,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         result, ctx_dict = await asyncio.to_thread(task_fn, *params)
         await ctx.update(ctx_dict)
 
-        #TODO: update statecode
+        ctx.move_state(job_id)
         await update_job(
             ctx,
             job_id,
@@ -45,7 +47,6 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         )
     except Exception as e:
         # TODO: finishes job but, does not send to client that it failed, until client requests it again
-        # update statecode
         await update_job(
             ctx,
             job_id,

@@ -30,7 +30,6 @@ def atomic_prepare_dataset(cfg):
 # TODO: needs to return back to add some more input types...
 def atomic_prepare_predictor(cfg):
     log.info('Initializing prepare predictor process')
-    # TODO: prevent if data is not initialized
     predictor = build_predictor(cfg)
     ctx_dict = {
         'predictor': predictor,

@@ -3,15 +3,13 @@ from model_src.models.model_builder import build_predictor
 from model_src.prepare_train.prepare_train import prepare_train_params
 import model_src.eval
 
-from app_src.utils.train import retrieve_logged_artficats
-
 import app_src.schemas.job_request as requests
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-def atomic_predict(client, req):
+def atomic_final_eval(client, req):
     log.info('Initializing predict process')
     run_id = req.run_id
 

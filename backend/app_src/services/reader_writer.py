@@ -17,6 +17,7 @@ PATHS_MAP = {
     'model_state_rel_path': Path('/predictor/model.pt'),
     'pp_cfg_rel_path': Path('/predictor/pp_cfg.json'),
     'train_cfg_rel_path': Path('/train/train_cfg.json'),
+    'error_analysis': Path('/error_analysis/error_analysis.json')
 }   
 
 class ArtifactWriter:
@@ -62,8 +63,12 @@ class ArtifactWriter:
         p = self.root / PATHS_MAP['train_cfg_rel_path']
         p.write_text(json_cfg)
 
+    def ssave_error_analysis(self, error_analysis: dict):
+        json_cfg = json.dumps(error_analysis, indent=2)
+        p = self.root / PATHS_MAP['error_analysis']
+        p.write_text(json_cfg)
+
     def log_artifacts(self):
-        # TODO: this needs to be updated, because it will store directory
         mlflow.log_artifacts(self.root, artifact_path='')
 
 class ArtifactReader:
@@ -119,5 +124,10 @@ class ArtifactReader:
 
     def load_train_cfg(self):
         p = self.root / PATHS_MAP['train_cfg_rel_path']
+        download_path = self.download(p)
+        return self.read_json(download_path)
+    
+    def load_error_analysis(self):
+        p = self.root / PATHS_MAP['error_analysis']
         download_path = self.download(p)
         return self.read_json(download_path)

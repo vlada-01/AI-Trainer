@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Sequence, Union
 from pprint import pformat
 
+from typing import Any
 
 from model_src.prepare_train.metrics import prepare_metrics, Metric
 from model_src.prepare_train.error_analysis import prepare_error_analysis, ClassificationErrorAnalysis, RegressionErrorAnalysis
@@ -16,6 +17,7 @@ log = get_logger(__name__)
 
 @dataclass
 class TrainParams:
+    train_cfg: Any
     device: str
     epochs: int
     num_of_iters: int
@@ -38,6 +40,7 @@ def prepare_train_params(model_params, meta, train_cfg):
 
     log.debug('Train Params are successfully prepared')
     return TrainParams(
+        train_cfg=train_cfg,
         device=device,
         epochs=epochs,
         num_of_iters=num_of_iters,

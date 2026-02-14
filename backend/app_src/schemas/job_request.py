@@ -66,5 +66,5 @@ class FineTuneJobRequest(BaseModel):
     new_layers_cfg: FtLayersCfg
     new_train_cfg: FtTrainCfg
 
-class PredictJobRequest(BaseModel):
-    run_id: str
+# class PredictJobRequest(BaseModel):
+#     name: None

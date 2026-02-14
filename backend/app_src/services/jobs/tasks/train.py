@@ -1,6 +1,7 @@
 import mlflow
 
 from  model_src.train import train_model
+from model_src.eval import evaluate
 
 from app_src.services.reader_writer import ArtifactWriter
 
@@ -8,14 +9,8 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-
-# TODO: update train_model function to get already prepared train_params
 def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_cfg, train_cfg, job_id):
     log.info('Initializing training model process')
-    if predictor is None or train is None:
-        log.error('Model training can not be initalized because predictor or dataset is not loaded')
-        raise AssertionError(f'Model and Dataset need to be prepared first')
-    
     exp_name = train_cfg.exp_name
     log.info(f'Setting experiment name: {exp_name}')
     mlflow.set_experiment(exp_name)
@@ -23,22 +18,19 @@ def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_
     run_name = train_cfg.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
-        # TODO: update this to use train_params instead of train_cfg
-        predictor = train_model(predictor, train, val, meta, train_cfg)
+        predictor = train_model(predictor, train, train_params)
+        _, val_error_analysis_dict = evaluate(predictor, val, train_params, collect_error_analysis=True)
         run_id = mlflow.active_run().info.run_id
         with ArtifactWriter(job_id, run_id) as w:
             w.save_data_cfg(dl_cfg.model_dump())
             w.save_meta(meta.to_dict())
             w.save_model_cfg(model_cfg.model_dump())
             w.save_model_state(predictor.get_model().state_dict())
-            # TODO: fix me, not pp_cfg, but pp is passed
-            w.save_post_processor_cfg(predictor.get_pp())
             w.save_train_cfg(train_cfg.model_dump())
-            # TODO: should also store the artifacts such as matrix, error_analysis
+            w.ssave_error_analysis(val_error_analysis_dict)
             w.log_artifacts()
     mlflow.end_run()
-    # TODO:
-    # result should contain mlflow_run_id for user to know where his run ended
-    # return result, ctx_dict
-
+    result = ''
+    ctx_dict = {}
     log.info('Training model process is successfully finished')
+    return result, ctx_dict
