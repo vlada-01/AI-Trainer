@@ -18,7 +18,7 @@ router.include_router(jobs_router)
 async def new_run(request: Request, data: NewRunCfg):
     try:
         ctx = request.state.ctx
-        run = await create_run(ctx)
+        run = await create_run(ctx, data)
         kwargs = await run.get_info()
         return RunCtxResponse(**kwargs)
     except Exception as e:

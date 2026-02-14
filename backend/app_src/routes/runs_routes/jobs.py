@@ -5,7 +5,6 @@ import app_src.schemas.job_request as requests
 from app_src.schemas.job_response import JobResponse, ErrorInfo
 
 import app_src.services.jobs.tasks.prepare as prepare
-from app_src.services.jobs.tasks.inspect import atomic_inspect_run
 from app_src.services.jobs.tasks.train import atomic_train_model
 from app_src.services.jobs.tasks.final_evaluation import atomic_predict
 
@@ -80,14 +79,13 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareTra
             )
         )
 
-@router.post('/prepare-complete-train', response_model=JobResponse)
+@router.post('/prepare-train', response_model=JobResponse)
 async def prepare_train(request: Request, run_id: str, data: requests.PrepareCompleteTrainJobRequest):
     try:
         log.info('Requesting complete train preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await create_job(run, 'PrepareCompleteTrainJobRequest')
-        # TODO: need to prevent create_job if model or data is not loaded
         params = (data)
         fn = prepare.atomic_prepare_complete_train
         asyncio.create_task(start_job(run, job.id, fn, params))
@@ -121,25 +119,6 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
                     error_message=str(e)
                 )
             )
-
-@router.post('/inspect-run', response_model=JobResponse)
-async def inspect_run(request: Request, run_id: str, data: requests.InspectJobRequest):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await create_job(run, 'InspectJobRequest')
-        params = (data)
-        fn = atomic_inspect_run
-        asyncio.create_task(start_job(ctx, job.id, fn, params))
-        return job
-    except Exception as e:
-        raise  HTTPException(
-            status_code=500,
-            detail=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
 
 @router.post('/post-process-run', response_model=JobResponse)
 async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):

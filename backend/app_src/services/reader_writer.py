@@ -7,7 +7,7 @@ from pathlib import Path
 
 from common.logger import get_logger
 
-# TODO: add logs 
+# TODO: add logs later
 log = get_logger(__name__)
 
 PATHS_MAP = {

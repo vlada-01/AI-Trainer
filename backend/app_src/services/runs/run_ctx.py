@@ -2,7 +2,7 @@ import asyncio
 from torch.utils.data import DataLoader
 from uuid import uuid4
 from datetime import datetime, timezone
-from typing import Dict, Optional, Literal
+from typing import Dict, Optional, List
 
 from app_src.schemas.job_response import JobResponse
 import app_src.schemas.job_request as requests
@@ -11,14 +11,20 @@ from model_src.data.metas.meta import MetaData
 from model_src.models.model_builder import Predictor
 from model_src.prepare_train.prepare_train import TrainParams
 
+from app_src.services.runs.state_manager import AvailableRunTypes, get_state_mappings, StateCode
+
 from app_src.app import runs_inactivity
 from app_src.app import cleanup_jobs_interval
 
 class RunContext:
-    def __init__(self):
+    def __init__(self, run_type):
+        self.run_type: AvailableRunTypes = run_type
+        self.state_mapping = get_state_mappings(run_type)
         self.run_id: str = uuid4().hex
-        self.status: Literal['draft', 'ready', 'queued', 'running', 'done', 'failed'] = 'draft' 
-        self.required_steps: list[str] = ['prepare_dataset, prepare_model, prepare_train']
+        self.state: StateCode = StateCode.draft
+        # self.required_steps: List[]
+        # TODO: update this
+        self.required_steps: List[str] = ['prepare_dataset, prepare_model, prepare_train']
         now = datetime.now(timezone.utc)
         self.created_at: str = now
         self.updated_at: str = now
@@ -49,7 +55,8 @@ class RunContext:
             jobs = [v for v in self.jobs.values()]
             kwargs = {
                 'run_id': self.run_id,
-                'status': self.status,
+                'run_type': self.run_type,
+                'state': self.state,
                 'required_steps': self.required_steps,
                 'jobs_status': jobs,
                 'created_at': self.created_at.isoformat(),
@@ -85,18 +92,20 @@ class RunContext:
                 self.cached_model_cfg
             )
     
-    async def is_running(self):
+    # TODO: check me
+    async def is_valid_to_add(self, status_code):
         async with self.run_ctx_lock:
-            return self.status == 'running'
+            return self.state.value <= status_code
     
     async def is_cleanable(self):
         async with self.run_ctx_lock:
-            status_check = self.status in ('queued', 'running', 'done', 'failed')
+            # TODO: update me
+            state_check = self.state in ('queued', 'running', 'done', 'failed')
 
             now = datetime.now(timezone.utc)
             update_check = (now - self.updated_at) > runs_inactivity
             
-            return status_check or update_check
+            return state_check or update_check
 
     async def cleanup_task_loop(self):
         while True:

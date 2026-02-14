@@ -2,16 +2,16 @@ from app_src.app_ctx import AppContext
 
 from app_src.services.runs.run_ctx import RunContext
 
+from app_src.schemas.runs import NewRunCfg
+
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
-async def create_run(ctx: AppContext) -> RunContext:
-    run = RunContext()
-
+async def create_run(ctx: AppContext, data: NewRunCfg) -> RunContext:
+    run = RunContext(data.run_type)
     async with ctx.runs_lock:
         ctx.runs[run.run_id] = run
-
     return run
 
 async def get_run(ctx: AppContext, run_id: str) -> RunContext:

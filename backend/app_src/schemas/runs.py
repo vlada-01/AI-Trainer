@@ -3,9 +3,11 @@ from typing import Optional, Literal, Any, List
 
 from app_src.schemas.job_response import ErrorInfo, JobResponse
 
+from app_src.services.runs.state_manager import AvailableRunTypes, StateCode
+
 class RunCtxResponse(BaseModel):
     id: str
-    status: Literal['draft', 'ready', 'running']
+    state: StateCode
     required_steps: Optional[List[Literal['dataset, predictor, train_params']]] = None
     status_details: Optional[Any] = None
     jobs: Optional[List[JobResponse]] = None
@@ -14,4 +16,8 @@ class RunCtxResponse(BaseModel):
     updated_at: str
 
 class NewRunCfg(BaseModel):
-    name: None
+    run_type: Literal[
+        AvailableRunTypes.base,
+        AvailableRunTypes.fine_tune,
+        AvailableRunTypes.post_process
+        ]

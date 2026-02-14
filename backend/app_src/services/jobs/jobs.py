@@ -13,7 +13,8 @@ from common.logger import get_logger
 log = get_logger(__name__)
 
 async def create_job(ctx: RunContext, job_type: str) -> JobResponse:
-    if await ctx.is_running():
+    # TODO: change this to get statusCode
+    if await ctx.is_valid_to_add():
         raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.status}')
     job_id = uuid4().hex
     job = JobResponse(
@@ -35,6 +36,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         result, ctx_dict = await asyncio.to_thread(task_fn, *params)
         await ctx.update(ctx_dict)
 
+        #TODO: update statecode
         await update_job(
             ctx,
             job_id,
@@ -43,6 +45,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         )
     except Exception as e:
         # TODO: finishes job but, does not send to client that it failed, until client requests it again
+        # update statecode
         await update_job(
             ctx,
             job_id,

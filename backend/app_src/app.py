@@ -8,6 +8,7 @@ import os
 from app_src.app_ctx import AppContext
 from app_src.routes.runs import router as runs_router
 from app_src.routes.hf_info import router as hf_info_router
+from app_src.routes.mlflow import router as mlflow_router
 
 
 import app_src.utils.app_utils as utils
@@ -62,6 +63,8 @@ async def lifespan(app: FastAPI):
                 pass
         del app.state.ctx
 
+# Add log.error in every place that raises Exception
+# Print stack trace before raising HTTP exception to client
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
@@ -73,3 +76,4 @@ app.add_middleware(
 )
 app.include_router(runs_router)
 app.include_router(hf_info_router)
+app.include_router(mlflow_router)
