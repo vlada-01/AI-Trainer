@@ -1,3 +1,4 @@
+import os
 import asyncio
 import traceback
 from uuid import uuid4
@@ -8,7 +9,7 @@ from app_src.schemas.job_response import JobResponse, ErrorInfo
 
 from app_src.services.runs.state_manager import StateCode
 
-from app_src.app import jobs_ttl
+jobs_ttl = int(os.getenv("JOBS_TTL", "7200"))
 
 from common.logger import get_logger
 

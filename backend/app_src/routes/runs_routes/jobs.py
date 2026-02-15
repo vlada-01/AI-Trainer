@@ -12,7 +12,7 @@ from app_src.services.jobs.tasks.train import atomic_train_model
 from app_src.services.jobs.tasks.post_process import atomic_post_process
 from app_src.services.jobs.tasks.final_evaluation import atomic_final_eval
 
-from backend.app_src.services.jobs.jobs import try_create_job, get_job, start_job
+from app_src.services.jobs.jobs import try_create_job, get_job, start_job
 
 from app_src.services.runs.runs import get_run
 

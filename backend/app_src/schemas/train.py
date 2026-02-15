@@ -4,7 +4,7 @@ from typing import Literal, Union, Optional, List, Dict, Any
 from model_src.prepare_train.metrics import AvailableMetrics
 from model_src.models.post_processor import AvailablePostProcessors
 
-from backend.app_src.schemas.data import TransformStep
+from app_src.schemas.data import TransformStep
 from app_src.schemas.models import Layers
 
 

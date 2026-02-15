@@ -1,9 +1,10 @@
+import os
 from uuid import uuid4
 from app_src.schemas.mlflow import Experiment
 
 from app_src.services.reader_writer import ArtifactReader
 
-from app_src.app import mlflow_public_uri
+mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 
 from common.logger import get_logger
 

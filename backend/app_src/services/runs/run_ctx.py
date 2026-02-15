@@ -1,3 +1,4 @@
+import os
 import asyncio
 from torch.utils.data import DataLoader
 from uuid import uuid4
@@ -13,8 +14,8 @@ from model_src.prepare_train.prepare_train import TrainParams
 
 from app_src.services.runs.state_manager import AvailableRunTypes, get_state_mappings, StateCode
 
-from app_src.app import runs_inactivity
-from app_src.app import cleanup_jobs_interval
+runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
+cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
 
 class RunContext:
     def __init__(self, run_type):

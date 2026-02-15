@@ -17,14 +17,11 @@ from common.logger import setup_logging, get_logger
 
 log = get_logger(__name__)
 
-mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 registry_uri = os.getenv("MLFLOW_REGISTRY_URI", "http://localhost:5000")
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 cleanup_runs_interval = int(os.getenv("CLEANUP_RUNS_INTERVAL", "60"))
-cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
-jobs_ttl = int(os.getenv("JOBS_TTL", "7200"))
-runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

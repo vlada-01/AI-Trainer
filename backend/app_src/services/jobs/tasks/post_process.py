@@ -1,3 +1,4 @@
+import os
 import mlflow
 import copy
 
@@ -5,7 +6,7 @@ from model_src.models.post_processor import build_post_processor
 
 from model_src.eval import evaluate
 
-from app_src.app import mlflow_public_uri
+mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 
 from app_src.services.reader_writer import ArtifactWriter
 
