@@ -63,7 +63,7 @@ class ArtifactWriter:
         p = self.root / PATHS_MAP['train_cfg_rel_path']
         p.write_text(json_cfg)
 
-    def ssave_error_analysis(self, error_analysis: dict):
+    def save_error_analysis(self, error_analysis: dict):
         json_cfg = json.dumps(error_analysis, indent=2)
         p = self.root / PATHS_MAP['error_analysis']
         p.write_text(json_cfg)

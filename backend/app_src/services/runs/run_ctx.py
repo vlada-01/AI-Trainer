@@ -59,7 +59,7 @@ class RunContext:
                 'run_type': self.run_type,
                 'state': self.state.name,
                 # 'required_steps': self.required_steps,
-                'jobs_status': jobs,
+                'jobs': jobs,
                 'created_at': self.created_at.isoformat(),
                 'updated_at': self.updated_at.isoformat(),
             }
@@ -108,11 +108,6 @@ class RunContext:
                 self.predictor,
                 self.val,
                 self.train_params,
-                self.meta,
-                self.cached_dl_cfg,
-                self.cached_model_cfg,
-                self.cached_train_cfg,
-                self.cached_mlflow_run_id
             )
          
     async def get_final_eval_params(self):
@@ -120,7 +115,12 @@ class RunContext:
             return (
                 self.predictor,
                 self.test,
+                self.meta,
                 self.train_params,
+                self.cached_dl_cfg,
+                self.cached_model_cfg,
+                self.cached_pp_cfg,
+                self.cached_train_cfg,
                 self.cached_mlflow_run_id
             )
     

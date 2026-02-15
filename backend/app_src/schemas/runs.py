@@ -7,10 +7,10 @@ from app_src.services.runs.state_manager import AvailableRunTypes, StateCode
 
 class RunCtxResponse(BaseModel):
     id: str
+    run_type: str
     state: StateCode
     # required_steps: Optional[List[Literal['dataset, predictor, train_params']]] = None
-    status_details: Optional[Any] = None
-    jobs: Optional[List[JobResponse]] = None
+    jobs: List[JobResponse]
     error: Optional[ErrorInfo] = None
     created_at: str
     updated_at: str

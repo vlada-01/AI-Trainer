@@ -70,4 +70,4 @@ class FineTuneJobRequest(BaseModel):
     new_train_cfg: FtTrainCfg
 
 class FinalEvalJobRequest(BaseModel):
-    run_id: str
+    new_run_name: str

@@ -4,7 +4,8 @@ from fastapi import APIRouter, Request, HTTPException
 from app_src.schemas.runs import NewRunCfg, RunCtxResponse, ErrorInfo
 from app_src.services.runs.runs import create_run, get_run
 
-from app_src.routes.runs_routes.jobs import router as jobs_router
+from app_src.routes.runs_routes.exec_jobs import router as exec_router
+from app_src.routes.runs_routes.prepare_jobs import router as prepare_router
 
 from common.logger import get_logger
 
@@ -12,7 +13,8 @@ log = get_logger(__name__)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
-router.include_router(jobs_router)
+router.include_router(exec_router)
+router.include_router(prepare_router)
 
 @router.post('/', response_model=RunCtxResponse)
 async def new_run(request: Request, data: NewRunCfg):
@@ -48,6 +50,8 @@ async def get_current_status(request: Request, run_id: str):
                 error_message=str(e),
             )
         )
+    
+# add endpoint for moving run with validation everything is done for that type
 
 # TODO: implement client cancel
 # @router.post('/{run_id}/cancel', response_model=RunCtxResponse)

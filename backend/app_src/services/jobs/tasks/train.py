@@ -26,8 +26,9 @@ def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_
             w.save_meta(meta.to_dict())
             w.save_model_cfg(model_cfg.model_dump())
             w.save_model_state(predictor.get_model().state_dict())
+            w.save_post_processor_cfg(None)
             w.save_train_cfg(train_cfg.model_dump())
-            w.ssave_error_analysis(val_error_analysis_dict)
+            w.save_error_analysis(val_error_analysis_dict)
             w.log_artifacts()
     mlflow.end_run()
     result = ''

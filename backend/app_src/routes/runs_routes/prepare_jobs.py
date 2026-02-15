@@ -7,10 +7,7 @@ from app_src.schemas.job_response import JobResponse, ErrorInfo
 
 from app_src.services.runs.state_manager import StateCode
 
-import app_src.services.jobs.tasks.prepare as prepare
-from app_src.services.jobs.tasks.train import atomic_train_model
-from app_src.services.jobs.tasks.post_process import atomic_post_process
-from app_src.services.jobs.tasks.final_evaluation import atomic_final_eval
+import app_src.services.jobs.tasks.prepare_tasks as prepare
 
 from app_src.services.jobs.jobs import try_create_job, get_job, start_job
 
@@ -20,9 +17,9 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter(prefix="/{run_id}/jobs", tags=["jobs"])
+router = APIRouter(prefix="/{run_id}/prepare-jobs", tags=["jobs"])
 
-@router.post('/prepare-dataset', response_model=JobResponse)
+@router.post('/dataset', response_model=JobResponse)
 async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareDatasetJobRequest):
     try:
         log.info(f'Requesting data preparation')
@@ -43,7 +40,7 @@ async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareD
             )
         )
 
-@router.post('/prepare-model', response_model=JobResponse)
+@router.post('/model', response_model=JobResponse)
 async def prepare_model(request: Request, run_id: str, data: requests.PrepareModelJobRequest):
     try:
         log.info('Requesting model preparation')
@@ -64,13 +61,13 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
             )
         )
     
-@router.post('/prepare-train-params', response_model=JobResponse)
+@router.post('/train-params', response_model=JobResponse)
 async def prepare_train(request: Request, run_id: str, data: requests.PrepareTrainJobRequest):
     try:
         log.info('Requesting train parameters preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.default_cfg_ready)
+        job = await try_create_job(run, StateCode.prepare_default)
         # TODO: need to prevent create_job if model or data is not loaded
         params = await run.get_prepare_train_params() + (data, )
         fn = prepare.atomic_prepare_train_params
@@ -86,13 +83,13 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareTra
             )
         )
 
-@router.post('/prepare-train', response_model=JobResponse)
+@router.post('/full-train', response_model=JobResponse)
 async def prepare_train(request: Request, run_id: str, data: requests.PrepareCompleteTrainJobRequest):
     try:
         log.info('Requesting complete train preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.default_cfg_ready)
+        job = await try_create_job(run, StateCode.prepare_default)
         params = (data)
         fn = prepare.atomic_prepare_complete_train
         asyncio.create_task(start_job(run, job.id, fn, params))
@@ -107,15 +104,15 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareCom
             )
         )
     
-@router.post('/load-run-cfg', response_model=JobResponse)
+@router.post('/load-run', response_model=JobResponse)
 async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJobRequest):
     try:
         log.info('Requesting complete train preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.default_cfg_ready)
+        job = await try_create_job(run, StateCode.prepare_default_run)
         params = (data, job.id)
-        fn = prepare.atomic_prepare_cfg_from_run
+        fn = prepare.atomic_prepare_default_from_run
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
@@ -129,14 +126,14 @@ async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJ
         )
 
 # TODO update later to be able to repeatedly add more and more post processings on top of same base
-@router.post('/prepare-post-process', response_model=JobResponse)
+@router.post('/post-process', response_model=JobResponse)
 async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
     try:
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_pp)
-        params = await run.get_post_process_params() + (data, job.id)
-        fn = atomic_post_process
+        params = await run.get_post_process_params() + (data, )
+        fn = prepare.atomic_prepare_post_process
         asyncio.create_task(start_job(ctx, job.id, fn, params))
         return job
     except Exception as e:
@@ -148,7 +145,7 @@ async def post_process(request: Request, run_id: str, data: requests.PreparePost
                 error_message=str(e)
             )
         )
-
+    
 # TODO: update me
 # @router.post('/prepare-fine_tune', response_model=JobResponse)
 # async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
@@ -168,49 +165,7 @@ async def post_process(request: Request, run_id: str, data: requests.PreparePost
 #                 error_message=str(e)
 #             )
 #         )
-
-@router.post('/train', response_model=JobResponse)
-async def train_model(request: Request, run_id: str, data: requests.StartTrainJobRequest):
-    try:
-        log.info('Requesting train model')
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.training)
-        # TODO: need to prevent create_job if not data is loaded
-        params = await run.get_train_params() + (job.id, )
-        fn = atomic_train_model
-        asyncio.create_task(start_job(run, job.id, fn, params))
-        return job
-    except Exception as e:
-            print(traceback.format_exc())
-            raise  HTTPException(
-                status_code=500,
-                detail=ErrorInfo(
-                    error_type=type(e).__name__,
-                    error_message=str(e)
-                )
-            )
-
-@router.get('/final-evaluation', response_model=JobResponse)
-async def final_evaluation(request: Request, run_id: str):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.final_eval)
-        params = await run.get_final_eval_params()
-        fn = atomic_final_eval
-        asyncio.create_task(start_job(run, job.id, fn, params))
-        return job
-    except Exception as e:
-        print(traceback.format_exc())
-        raise  HTTPException(
-            status_code=500,
-            detail=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
-
+    
 @router.get('/{job_id}', response_model=JobResponse)
 async def job_status(request: Request, run_id: str, job_id: str):
     try:
@@ -227,15 +182,3 @@ async def job_status(request: Request, run_id: str, job_id: str):
                 error_message=str(e)
             )
         )
-
-# TODO: big problem for not being able to cancel task once it is started, for now all jobs are atomic
-# @router.delete('/{job_id}/cancel', response_model=JobResponse)
-# async def cancel_job(request: Request, run_id: str, job_id: str):
-#     ctx = request.app.state.ctx
-#     run = await get_run(ctx, run_id)
-#     job = await get_job(ctx, job_id)
-#     # TODO: implement later stopping logic
-#     # add exception for asyncio.CancelledError in start_job
-#     # and function that was called in to_thread need to occasionally check cancel_flag
-#     return None
-

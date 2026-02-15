@@ -1,5 +1,7 @@
+import copy
 from model_src.data.dataset_builders.builder import build_data
 from model_src.models.model_builder import build_predictor
+from model_src.models.post_processor import build_post_processor
 from model_src.prepare_train.prepare_train import prepare_train_params
 
 import app_src.schemas.job_request as requests
@@ -44,7 +46,6 @@ def atomic_prepare_predictor(cfg):
     return result, ctx_dict
 
 def atomic_prepare_train_params(predictor, meta, train_cfg):
-    # TODO: prevent if data and predictor are not iniialized
     log.info('Initializing prepare training parameters process')
     model = predictor.get_model()
     train_params = prepare_train_params(model.parameters(), meta, train_cfg)
@@ -78,13 +79,15 @@ def atomic_prepare_complete_train(cfgs):
     log.info('Prepare train process is successfully finished')
     return result, ctx_dict
 
-def atomic_prepare_cfg_from_run(cfg, job_id):
+def atomic_prepare_default_from_run(cfg, job_id):
     log.info('Initiazling prepare train with configurations from run')
     run_id = cfg.run_id
 
+    # TODO: update this
     with ArtifactReader(job_id, run_id) as r:
         ds_cfg = r.load_data_cfg()
         model_cfg = r.load_data_cfg()
+        model_state_dict = r.load_model_state()
         train_cfg = r.load_data_cfg()
     
     cfgs = requests.PrepareCompleteTrainJobRequest(
@@ -93,10 +96,34 @@ def atomic_prepare_cfg_from_run(cfg, job_id):
         train_cfg=requests.PrepareTrainJobRequest(**train_cfg)
     )
     result, ctx_dict = atomic_prepare_complete_train(cfgs)
+    ctx_dict['predictor'] = ctx_dict['predictor'].get_model().load_state_dict(model_state_dict)
     
     ctx_dict = {
         **ctx_dict,
         'cached_mlflow_run_id': run_id
     }
     log.info('Prepare train with configurations from run is successfully finished')
+    return result, ctx_dict
+
+def atomic_prepare_post_process(predictor, val_dl, train_params, pp_cfg):
+    log.info('Initiazling post processsor process')
+    
+    log.info('Initializing post processor')
+    pp = build_post_processor(pp_cfg)
+
+    log.info('Initializing training of post processor parameters')
+    device = train_params.device
+    pp.train(copy.deepcopy(predictor.get_model()), val_dl, device)
+    
+    log.info('Setting post processor in the predictor')
+    predictor.set_pp(pp)
+
+    updated_pp_cfg = predictor.get_pp().get_cfg()
+
+    result = ''
+    ctx_dict = {
+        'cached_pp_cfg': updated_pp_cfg
+    }
+
+    log.info('Post processor is successfully finished')
     return result, ctx_dict
