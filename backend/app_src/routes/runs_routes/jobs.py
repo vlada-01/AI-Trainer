@@ -8,6 +8,7 @@ from app_src.services.runs.state_manager import StateCode
 
 import app_src.services.jobs.tasks.prepare as prepare
 from app_src.services.jobs.tasks.train import atomic_train_model
+from app_src.services.jobs.tasks.post_process import atomic_post_process
 from app_src.services.jobs.tasks.final_evaluation import atomic_final_eval
 
 from backend.app_src.services.jobs.jobs import try_create_job, get_job, start_job
@@ -47,7 +48,7 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_model)
-        params = (data)
+        params = (data) #written like this, seems like there is no dependency from ds
         fn = prepare.atomic_prepare_predictor
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
@@ -66,7 +67,7 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareTra
         log.info('Requesting train parameters preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.ready_for_train)
+        job = await try_create_job(run, StateCode.default_cfg_ready)
         # TODO: need to prevent create_job if model or data is not loaded
         params = await run.get_prepare_train_params() + (data, )
         fn = prepare.atomic_prepare_train_params
@@ -87,10 +88,70 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareCom
         log.info('Requesting complete train preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.ready_for_train)
+        job = await try_create_job(run, StateCode.default_cfg_ready)
         params = (data)
         fn = prepare.atomic_prepare_complete_train
         asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+    
+@router.post('/load-run-cfg', response_model=JobResponse)
+async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJobRequest):
+    try:
+        log.info('Requesting complete train preparation')
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await try_create_job(run, StateCode.default_cfg_ready)
+        params = (data, job.id)
+        fn = prepare.atomic_prepare_cfg_from_run
+        asyncio.create_task(start_job(run, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+
+# TODO update later to be able to repeatedly add more and more post processings on top of same base
+@router.post('/prepare-post-process', response_model=JobResponse)
+async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await try_create_job(run, StateCode.prepare_pp)
+        params = await run.get_post_process_params() + (data, job.id)
+        fn = atomic_post_process
+        asyncio.create_task(start_job(ctx, job.id, fn, params))
+        return job
+    except Exception as e:
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+
+# TODO: update me
+@router.post('/prepare-fine_tune', response_model=JobResponse)
+async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await try_create_job(run, StateCode.prepare_fine_tune)
+        params = (data)
+        fn = atomic_fine_tune
+        asyncio.create_task(start_job(ctx, job.id, fn, params))
         return job
     except Exception as e:
         raise  HTTPException(
@@ -122,52 +183,13 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
                 )
             )
 
-# TODO need to be updated
-@router.post('/post-process-run', response_model=JobResponse)
-async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.prepare_pp)
-        params = (data)
-        fn = atomic_post_process
-        asyncio.create_task(start_job(ctx, job.id, fn, params))
-        return job
-    except Exception as e:
-        raise  HTTPException(
-            status_code=500,
-            detail=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
-
-@router.post('/fine_tune_run', response_model=JobResponse)
-async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.prepare_fine_tune)
-        params = (data)
-        fn = atomic_fine_tune
-        asyncio.create_task(start_job(ctx, job.id, fn, params))
-        return job
-    except Exception as e:
-        raise  HTTPException(
-            status_code=500,
-            detail=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
-
 @router.get('/final-evaluation', response_model=JobResponse)
 async def final_evaluation(request: Request, run_id: str):
     try:
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.final_eval)
-        params = run.get_final_eval_params()
+        params = await run.get_final_eval_params()
         fn = atomic_final_eval
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job

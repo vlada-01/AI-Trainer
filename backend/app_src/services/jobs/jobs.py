@@ -16,9 +16,9 @@ log = get_logger(__name__)
 
 async def try_create_job(ctx: RunContext, state_code: StateCode) -> JobResponse:
     # TODO: change this to get statusCode
-    if await ctx.is_valid_to_add(state_code):
+    if await ctx.is_valid_to_add(state_code): 
         raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
-    job_id = uuid4().hex
+    job_id = uuid4().hex #TODO: add check for job_id already present
     job = JobResponse(
         id=job_id,
         job_type = state_code,

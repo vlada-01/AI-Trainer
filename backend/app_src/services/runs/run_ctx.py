@@ -44,10 +44,10 @@ class RunContext:
         self.train_params: Optional[TrainParams] = None
 
         # cached cfgs, stored as artifacts in the end of run
-        self.cached_model_cfg: Optional[requests.PrepareModelJobRequest] = None
-        self.cached_pp_cfg: Optional[requests.PreparePostProcessingJobRequest] = None
         self.cached_dl_cfg: Optional[requests.PrepareDatasetJobRequest] = None
+        self.cached_model_cfg: Optional[requests.PrepareModelJobRequest] = None
         self.cached_train_cfg: Optional[requests.PrepareTrainJobRequest] = None
+        self.cached_pp_cfg: Optional[requests.PreparePostProcessingJobRequest] = None
         self.cached_mlflow_run_id: Optional[str] = None
 
     async def get_info(self):
@@ -101,18 +101,32 @@ class RunContext:
                 self.cached_train_cfg,
             )
          
+    async def get_post_process_params(self):
+        async with self.run_ctx_lock:
+            return (
+                self.predictor,
+                self.val,
+                self.train_params,
+                self.meta,
+                self.cached_dl_cfg,
+                self.cached_model_cfg,
+                self.cached_train_cfg,
+                self.cached_mlflow_run_id
+            )
+         
     async def get_final_eval_params(self):
         async with self.run_ctx_lock:
             return (
                 self.predictor,
                 self.test,
-                self.train_params
+                self.train_params,
+                self.cached_mlflow_run_id
             )
     
     async def is_cleanable(self):
         async with self.run_ctx_lock:
             finished = self.state in (StateCode.done, StateCode.failed)
-            still_running = self.state == StateCode.training
+            still_running = self.state in (StateCode.training, StateCode.final_eval)
 
             now = datetime.now(timezone.utc)
             update_check = (now - self.updated_at) > runs_inactivity

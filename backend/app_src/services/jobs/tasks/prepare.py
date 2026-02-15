@@ -2,6 +2,10 @@ from model_src.data.dataset_builders.builder import build_data
 from model_src.models.model_builder import build_predictor
 from model_src.prepare_train.prepare_train import prepare_train_params
 
+import app_src.schemas.job_request as requests
+
+from app_src.services.reader_writer import ArtifactReader
+
 from common.logger import get_logger
 
 log = get_logger(__name__)
@@ -53,15 +57,17 @@ def atomic_prepare_train_params(predictor, meta, train_cfg):
     log.info('Prepare training parameters process is successfully finished')    
     return result, ctx_dict
 
-def atomic_prepare_complete_train(cfg1, cfg2, cfg3):
+# TODO: maybe add pp as well
+def atomic_prepare_complete_train(cfgs):
     log.info('Initiazling prepare train with all configurations')
-    _, ctx_dict_1 = atomic_prepare_dataset(cfg1)
+    ds_cfg, model_cfg, train_cfg = cfgs.dataset_cfg, cfgs.model_cfg, cfgs.train_cfg
+    _, ctx_dict_1 = atomic_prepare_dataset(ds_cfg)
     meta = ctx_dict_1['meta']
     
-    _, ctx_dict_2 = atomic_prepare_predictor(cfg2)
+    _, ctx_dict_2 = atomic_prepare_predictor(model_cfg)
     predictor = ctx_dict_2['predictor']
     
-    _, ctx_dict_3 = atomic_prepare_train_params(predictor, meta, cfg3)
+    _, ctx_dict_3 = atomic_prepare_train_params(predictor, meta, train_cfg)
     
     result = ''
     ctx_dict = {
@@ -72,3 +78,25 @@ def atomic_prepare_complete_train(cfg1, cfg2, cfg3):
     log.info('Prepare train process is successfully finished')
     return result, ctx_dict
 
+def atomic_prepare_cfg_from_run(cfg, job_id):
+    log.info('Initiazling prepare train with configurations from run')
+    run_id = cfg.run_id
+
+    with ArtifactReader(job_id, run_id) as r:
+        ds_cfg = r.load_data_cfg()
+        model_cfg = r.load_data_cfg()
+        train_cfg = r.load_data_cfg()
+    
+    cfgs = requests.PrepareCompleteTrainJobRequest(
+        dataset_cfg=requests.PrepareDatasetJobRequest(**ds_cfg),
+        model_cfg=requests.PrepareModelJobRequest(**model_cfg),
+        train_cfg=requests.PrepareTrainJobRequest(**train_cfg)
+    )
+    result, ctx_dict = atomic_prepare_complete_train(cfgs)
+    
+    ctx_dict = {
+        **ctx_dict,
+        'cached_mlflow_run_id': run_id
+    }
+    log.info('Prepare train with configurations from run is successfully finished')
+    return result, ctx_dict

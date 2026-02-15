@@ -47,6 +47,9 @@ class PrepareCompleteTrainJobRequest(BaseModel):
     model_cfg: PrepareModelJobRequest
     train_cfg: PrepareTrainJobRequest
 
+class LoadRunCfgJobRequest(BaseModel):
+    run_id: str
+
 class StartTrainJobRequest(BaseModel):
     name: None
 
@@ -66,5 +69,5 @@ class FineTuneJobRequest(BaseModel):
     new_layers_cfg: FtLayersCfg
     new_train_cfg: FtTrainCfg
 
-# class PredictJobRequest(BaseModel):
-#     name: None
+class FinalEvalJobRequest(BaseModel):
+    run_id: str

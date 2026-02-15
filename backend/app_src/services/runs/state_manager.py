@@ -12,7 +12,7 @@ class StateCode(Enum):
     draft = 0
     prepare_ds = 1
     prepare_model = 2
-    ready_for_train = 3
+    default_cfg_ready = 3
     prepare_fine_tune = 4
     prepare_pp = 5
     training = 6
@@ -22,10 +22,10 @@ class StateCode(Enum):
 
 def get_base_run_states():
     BASE_RUN_STATES = {
-        StateCode.draft: {StateCode.prepare_ds, StateCode.ready_for_train},
+        StateCode.draft: {StateCode.prepare_ds, StateCode.default_cfg_ready},
         StateCode.prepare_ds: {StateCode.prepare_model},
-        StateCode.prepare_model: {StateCode.ready_for_train},
-        StateCode.ready_for_train: {StateCode.training},
+        StateCode.prepare_model: {StateCode.default_cfg_ready},
+        StateCode.default_cfg_ready: {StateCode.training},
         StateCode.training: {StateCode.done, StateCode.failed},
         StateCode.done: set(),
         StateCode.failed: set()
@@ -35,7 +35,8 @@ def get_base_run_states():
 # TODO: these two should first load from run and then update
 def get_fine_tune_states():
     FINE_TUNE_RUN_STATES = {
-        StateCode.draft: {StateCode.prepare_fine_tune},
+        StateCode.draft: {StateCode.default_cfg_ready},
+        StateCode.default_cfg_ready: {StateCode.prepare_fine_tune},
         StateCode.prepare_fine_tune: {StateCode.training},
         StateCode.training: {StateCode.done, StateCode.failed},
         StateCode.done: set(),
@@ -45,9 +46,9 @@ def get_fine_tune_states():
 
 def get_post_process_run_states():
     POST_PROCESS_RUN_STATES = {
-        StateCode.draft: {StateCode.prepare_pp},
-        StateCode.prepare_pp: {StateCode.training},
-        StateCode.training: {StateCode.done, StateCode.failed},
+        StateCode.draft: {StateCode.default_cfg_ready},
+        StateCode.default_cfg_ready: {StateCode.prepare_pp},
+        StateCode.prepare_pp: {StateCode.done, StateCode.failed},
         StateCode.done: set(),
         StateCode.failed: set()
     }
@@ -55,7 +56,8 @@ def get_post_process_run_states():
 
 def get_final_evaluation_run_states():
     FINAL_EVAL_RUN_STATES = {
-        StateCode.draft: {StateCode.prepare_pp},
+        StateCode.draft: {StateCode.default_cfg_ready},
+        StateCode.default_cfg_ready: {StateCode.prepare_pp},
         StateCode.prepare_pp: {StateCode.final_eval},
         StateCode.final_eval: {StateCode.done, StateCode.failed},
         StateCode.done: set(),
