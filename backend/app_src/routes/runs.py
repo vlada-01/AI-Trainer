@@ -22,6 +22,7 @@ async def new_run(request: Request, data: NewRunCfg):
         kwargs = await run.get_info()
         return RunCtxResponse(**kwargs)
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -39,13 +40,12 @@ async def get_current_status(request: Request, run_id: str):
         kwargs = await run.get_info()
         return await RunCtxResponse(**kwargs)
     except Exception as e:
-        log.error(f'{type(e).__name__}, {str(e)}')
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e),
-                traceback=traceback.format_exc()
             )
         )
 

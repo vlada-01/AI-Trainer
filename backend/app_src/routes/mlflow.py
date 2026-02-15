@@ -23,6 +23,7 @@ def history(request: Request):
             exps=list_of_exps
         )
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -36,10 +37,10 @@ def history(request: Request):
 @router.get('/{mlflow_run_id}', response_model=ResultsResponse)
 async def final_evaluation(request: Request, mlflow_run_id: str):
     try:
-        ctx = request.app.state.ctx
-        results = get_run_results(mlflow_run_id)
-        # return formatted results
+        results, _ = get_run_results(mlflow_run_id)
+        return ResultsResponse(artifacts=results)
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(

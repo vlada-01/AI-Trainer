@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, Request, HTTPException
 
 from app_src.services.hf_info import get_dataset_info
@@ -21,6 +22,7 @@ def get_ds_info(request: Request, data: DatasetInfoRequest):
             status_details=ds_info_dict
         )
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=ErrorInfo(

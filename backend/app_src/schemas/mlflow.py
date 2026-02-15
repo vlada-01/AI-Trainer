@@ -9,5 +9,4 @@ class HistoryResponse(BaseModel):
     exps: List[Experiment]
 
 class ResultsResponse(BaseModel):
-    metrics: List[Any]
-    artifacts: List[Any]
+    artifacts: Any

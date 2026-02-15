@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException
 import asyncio
+import traceback
 
 import app_src.schemas.job_request as requests
 from app_src.schemas.job_response import JobResponse, ErrorInfo
@@ -33,6 +34,7 @@ async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareD
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -53,6 +55,7 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -74,6 +77,7 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareTra
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -94,6 +98,7 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareCom
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -114,6 +119,7 @@ async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJ
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -134,6 +140,7 @@ async def post_process(request: Request, run_id: str, data: requests.PreparePost
         asyncio.create_task(start_job(ctx, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -143,24 +150,24 @@ async def post_process(request: Request, run_id: str, data: requests.PreparePost
         )
 
 # TODO: update me
-@router.post('/prepare-fine_tune', response_model=JobResponse)
-async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await try_create_job(run, StateCode.prepare_fine_tune)
-        params = (data)
-        fn = atomic_fine_tune
-        asyncio.create_task(start_job(ctx, job.id, fn, params))
-        return job
-    except Exception as e:
-        raise  HTTPException(
-            status_code=500,
-            detail=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
+# @router.post('/prepare-fine_tune', response_model=JobResponse)
+# async def fine_tune(request: Request, run_id: str, data: requests.FineTuneJobRequest):
+#     try:
+#         ctx = request.app.state.ctx
+#         run = await get_run(ctx, run_id)
+#         job = await try_create_job(run, StateCode.prepare_fine_tune)
+#         params = (data)
+#         fn = atomic_fine_tune
+#         asyncio.create_task(start_job(ctx, job.id, fn, params))
+#         return job
+#     except Exception as e:
+#         raise  HTTPException(
+#             status_code=500,
+#             detail=ErrorInfo(
+#                 error_type=type(e).__name__,
+#                 error_message=str(e)
+#             )
+#         )
 
 @router.post('/train', response_model=JobResponse)
 async def train_model(request: Request, run_id: str, data: requests.StartTrainJobRequest):
@@ -175,6 +182,7 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+            print(traceback.format_exc())
             raise  HTTPException(
                 status_code=500,
                 detail=ErrorInfo(
@@ -194,6 +202,7 @@ async def final_evaluation(request: Request, run_id: str):
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -210,6 +219,7 @@ async def job_status(request: Request, run_id: str, job_id: str):
         job = await get_job(run, job_id)
         return job
     except Exception as e:
+        print(traceback.format_exc())
         raise  HTTPException(
             status_code=404,
             detail=ErrorInfo(
