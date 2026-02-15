@@ -1,17 +1,17 @@
 from pydantic import BaseModel
-from typing import Literal, Union, Optional, Any
+from typing import Literal, Optional, Any
 
-class PredictJobRequest(BaseModel):
-    run_id: str
+from app_src.services.runs.state_manager import StateCode
 
 class ErrorInfo(BaseModel):
     error_type: str
     error_message: str
-    traceback: Any
+    traceback: Optional[Any]
 
 class JobResponse(BaseModel):
     id: str
-    status: Union[Literal['sucess', 'pending', 'in_progress', 'failed']]
+    job_type: StateCode
+    status: Literal['pending', 'in_progress', 'success', 'failed']
     status_details: Optional[Any] = None
     error: Optional[ErrorInfo] = None
     created_at: str

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Literal, Union, Tuple, Optional, List, Any
+from typing import Literal, Union, Tuple, Optional, List
 
 from model_src.models.model_types.dag import AvailableNodeTypes
 from model_src.models.layers.layer_factory import AvailableLayers
@@ -119,49 +119,3 @@ class DAGCfg(BaseModel):
     edges: List[Tuple[str, str]]
     # TODO: extend latar so model can return more then one value
     out_key: str
-
-class ModelJobRequest(BaseModel):
-    nodes: List[NodeCfg]
-    dag: DAGCfg
-
-    @model_validator(mode='after')
-    def validate_graph(self):
-        node_ids = set([id for id in self.dag.node_ids])
-
-        # node ids must be unique
-        if len(node_ids) != len(self.dag.node_ids):
-            raise ValueError(f'DAG configuration error: contains duplicates') 
-        
-        # all nodes must be also present in dag.nodes
-        for node in self.nodes:
-            if node.id not in node_ids:
-                raise ValueError(f'DAG configuration error: Invalid node {node.id}')
-            
-        # all edges must be present in dag.nodes
-        for u, v in self.dag.edges:
-            if u not in node_ids or v not in node_ids:
-                raise ValueError(f'DAG configuration error: Invalid edge ({u},{v})')
-
-class ErrorInfo(BaseModel):
-    error_type: str
-    error_message: str
-    traceback: Any
-
-class ModelJobResponse(BaseModel):
-    id: str
-    status: Literal['pending', 'in_progress', 'success', 'failed']
-    status_details: str = ''
-    error: Optional[ErrorInfo] = None
-    created_at: str
-    expires_at: str
-
-#----------------------------------
-
-class Experiment(BaseModel):
-    name: str
-    url: str
-
-class HistoryResponse(BaseModel):
-    exps: List[Experiment]
-
-#----------------------------------
