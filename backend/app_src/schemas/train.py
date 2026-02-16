@@ -21,18 +21,7 @@ class LossFnConfig(BaseModel):
     type: str
     args: Dict[str, Any]
 
-class TrainCfg(BaseModel):
-    device: Optional[str] = 'cpu'
-
-    epochs: int
-    num_of_iters: Optional[int] = 1
-
-    optimizer: OptimizerConfig
-    lr_decay: Optional[LrDecay] = None
-
-    loss_fn: LossFnConfig
-    
-    metrics: List[Union[
+Metrics = List[Union[
         Literal[AvailableMetrics.accuracy],
         Literal[AvailableMetrics.precision],
         Literal[AvailableMetrics.recall],

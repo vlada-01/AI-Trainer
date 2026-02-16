@@ -14,6 +14,10 @@ class TabularMetaData(MetaData):
         self.min = None
         self.max = None
         self.task = None
+        self.input_keys = None
+
+    def preprocess_raw(self, raw):
+        pass
 
     def update(self, upd_dict):
         for k, v in upd_dict.items():
@@ -37,6 +41,9 @@ class TabularMetaData(MetaData):
         if fn is None:
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
+
+    def get_input_keys(self):
+        return self.input_keys
     
     def get_necessary_sizes(self):
         return {
@@ -102,3 +109,7 @@ class TabularMetaData(MetaData):
 
     def set_task(self, task):
         self.task = task
+
+    def set_input_keys(self, sample):
+        X_dict = sample['X']
+        self.input_keys = [k for k in X_dict.keys()]

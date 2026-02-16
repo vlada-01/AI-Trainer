@@ -37,6 +37,8 @@ services:
     shm_size: "8gb"
 
     environment:
+      SEED: "42"
+
       LOG_LEVEL: DEBUG
       MUTE_THIRD_PARTY_LOGS: "1"
 

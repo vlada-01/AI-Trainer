@@ -11,11 +11,19 @@ class MetaData(ABC):
         self.modality = modality
 
     @abstractmethod
+    def preprocess_raw(self, ds):
+        pass
+
+    @abstractmethod
     def update(self, upd_dict):
         pass
 
     @abstractmethod
     def resolve(self, name):
+        pass
+
+    @abstractmethod
+    def get_input_keys(self, sample):
         pass
 
     @abstractmethod

@@ -3,7 +3,7 @@ from typing import Optional, List, Union
 
 from app_src.schemas.data import SklearnConfig, HuggingFaceConfig, DataTransforms
 from app_src.schemas.models import DAGCfg, NodeCfg
-from app_src.schemas.train import TrainCfg
+from app_src.schemas.train import OptimizerConfig, LrDecay, LossFnConfig, Metrics
 from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
 from app_src.schemas.train import Calibration, GlobalThreshold
 
@@ -34,13 +34,20 @@ class PrepareModelJobRequest(BaseModel):
         for u, v in self.dag.edges:
             if u not in node_ids or v not in node_ids:
                 raise ValueError(f'DAG configuration error: Invalid edge ({u},{v})')
+        
+        return self
             
 class PrepareTrainJobRequest(BaseModel):
-    exp_name: str
-    run_name: str
-    model_name: str
     log_train_metrics: Optional[bool] = False
-    train_cfg: TrainCfg
+    device: Optional[str] = 'cpu'
+    epochs: int
+    num_of_iters: Optional[int] = 1
+
+    optimizer: OptimizerConfig
+    lr_decay: Optional[LrDecay] = None
+    loss_fn: LossFnConfig
+    
+    metrics: Metrics
 
 class PrepareCompleteTrainJobRequest(BaseModel):
     dataset_cfg: PrepareDatasetJobRequest
@@ -51,7 +58,9 @@ class LoadRunCfgJobRequest(BaseModel):
     run_id: str
 
 class StartTrainJobRequest(BaseModel):
-    name: None
+    exp_name: str
+    run_name: str
+    model_name: str
 
 class InspectJobRequest(BaseModel):
     run_id: str

@@ -31,14 +31,14 @@ class InputNode(Node):
         super().__init__(id, in_keys, out_keys)
         self.exec_node = None
     
-    def get_executable(self, *xs):
+    def forward(self, *xs):
         return xs
 
 class LayerNode(Node):
     def __init__(self, id, in_keys, out_keys, layer_cfg):
         super().__init__(id, in_keys, out_keys)
-        cfg_dict = layer_cfg.model_dump(exclude={'type', 'predefined'})
-        self.exec_node = build_layer(layer_cfg.type.value, False, cfg_dict)
+        cfg_dict = layer_cfg.model_dump(exclude={'type'})
+        self.exec_node = build_layer(layer_cfg.type.value, cfg_dict)
 
     def forward(self, *xs):
         return self.exec_node(*xs)
@@ -48,7 +48,7 @@ class ChainNode(Node):
         super().__init__(id, in_keys, out_keys)
         self.exec_node = nn.Sequential(*build_layers(layers_cfg))
 
-    def get_executable(self, *xs):
+    def forward(self, *xs):
         return self.exec_node(*xs)
 
 class ComponentNode(Node):
@@ -63,7 +63,7 @@ class ComponentNode(Node):
         graph.add_edges_from([(u, v) for u, v in edges])
         
         self.check_graph(graph)
-        self.sorted_ids = self.topological_sort()
+        self.sorted_ids = self.topological_sort(graph)
 
         self.state = dict()
 

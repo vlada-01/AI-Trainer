@@ -30,8 +30,8 @@ class RunContext:
         self.created_at: str = now
         self.updated_at: str = now
 
-        self.jobs: Dict[str, JobResponse]
-        self.run_ctx_lock: asyncio.Lock
+        self.jobs: Dict[str, JobResponse] = {}
+        self.run_ctx_lock: asyncio.Lock = asyncio.Lock()
         
         self.cleanup_jobs_interval = cleanup_jobs_interval
         self.cleanup_task: asyncio.Task = asyncio.create_task(self.cleanup_task_loop())
@@ -83,8 +83,7 @@ class RunContext:
     async def move_state(self, job_id):
         async with self.run_ctx_lock:
             job = self.jobs[job_id]
-            self.state = self.state_mapping[job.job_type]
-
+            self.state = job.job_type
     async def get_prepare_train_params(self):
         async with self.run_ctx_lock:
             return (self.predictor, self.meta)

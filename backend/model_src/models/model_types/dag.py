@@ -8,7 +8,7 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-class AvailableNodeTypes(Enum):
+class AvailableNodeTypes(str, Enum):
     input = 'input'
     layer = 'layer'
     chain = 'chain'
@@ -33,12 +33,12 @@ def dag_builder(cfg):
 
 def initialize_nodes(nodes_cfg):
     nodes = {}
-    log.debug('Iniitalizing nodes for cfg:\n%s', {k: v for k, v in nodes_cfg.model_dump().items()})
     for node_cfg in nodes_cfg:
-        type = node_cfg.type
-        cfg_dict = node_cfg.model_dump(exclude={'type', 'predefined'})
-        node = build_node(type, cfg_dict)
+        node_type = node_cfg.type
+        cfg_dict = {k: getattr(node_cfg, k) for k in node_cfg.model_fields if k != 'type'}
+        node = build_node(node_type, cfg_dict)
         nodes[node.id] = node
+    log.debug('Assembled nodes:\n%s', {k: type(v) for k, v in nodes.items()})
     return nodes
 
 def build_node(type, cfg_dict):
@@ -64,7 +64,7 @@ class DAGNet(nn.Module):
         log.info('Checking graph')
         self.check_graph(graph)
         log.info('Topological sort of the graph')
-        self.sorted_ids = self.topological_sort()
+        self.sorted_ids = self.topological_sort(graph)
         log.debug('Topological sort:\n%s', self.sorted_ids)
         
         self.state = dict()

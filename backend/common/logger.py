@@ -39,17 +39,9 @@ def setup_logging():
             }
         },
         "loggers": {
-            "app_src": {
-                "handlers": ["console"],
-                "level": lvl,
-                "propagate": False,
+            "app_src": {"handlers": ["console"], "level": lvl, "propagate": False},
+            "model_src": {"handlers": ["console"], "level": lvl, "propagate": False},
             },
-            "model_src": {
-                "handlers": ["console"],
-                "level": lvl,
-                "propagate": False,
-            },
-        },
         "root": {"handlers": ["console"], "level": root_lvl},
     })
 

@@ -12,7 +12,8 @@ def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
     predictor.get_model().to(device)
     predictor.get_model().eval()
     with torch.no_grad():
-        for X, y, indices in dataloader:
+        for batch, indices in dataloader:
+            X, y = batch['X'], batch['y']
             if isinstance(X, dict):
                 X = {k: v.to(device) for k, v in X.items()}
             else:
@@ -38,7 +39,8 @@ def predict(predictor, test_dl, device, metrics, error_analysis):
     predictor.get_model().to(device)
     predictor.get_model().eval()
     with torch.no_grad():
-        for X, y, indices in test_dl:
+        for batch, indices in test_dl:
+            X, y = batch['X'], batch['y']
             if isinstance(X, dict):
                 X = {k: v.to(device) for k, v in X.items()}
             else:

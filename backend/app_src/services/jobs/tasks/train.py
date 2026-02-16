@@ -9,13 +9,15 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
-def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_cfg, train_cfg, job_id):
+def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_cfg, train_cfg, data, job_id):
     log.info('Initializing training model process')
-    exp_name = train_cfg.exp_name
+    exp_name = data.exp_name
     log.info(f'Setting experiment name: {exp_name}')
     mlflow.set_experiment(exp_name)
 
-    run_name = train_cfg.run_name
+    #TODO: data.model_name is not used
+
+    run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
         predictor = train_model(predictor, train, train_params)

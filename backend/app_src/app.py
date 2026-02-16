@@ -17,6 +17,7 @@ from common.logger import setup_logging, get_logger
 
 log = get_logger(__name__)
 
+seed = int(os.getenv("SEED", "42"))
 tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 registry_uri = os.getenv("MLFLOW_REGISTRY_URI", "http://localhost:5000")
 origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
@@ -28,7 +29,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
     log.info('Initializing App context')
     ctx = AppContext(
-        seed=42,
+        seed=seed,
         mlflow_client=MlflowClient(
             tracking_uri=tracking_uri,
             registry_uri=registry_uri

@@ -1,15 +1,17 @@
-from datasets import load_dataset
-from transformers import AutoTokenizer
+import os
+from datasets import load_dataset, DatasetDict
+
 from torch.utils.data import Dataset
 from pprint import pformat
 
 from model_src.data.metas.utils import create_meta, update_meta
-from model_src.data.mapper import prepare_mapper
 from model_src.data.transforms import assemble_transforms
 
 from common.logger import get_logger
 
 log = get_logger(__name__)
+
+seed = int(os.getenv("SEED", "42"))
 
 MAX_LEN = 256
 
@@ -18,19 +20,22 @@ class HuggingFaceBuilder():
         self.cfg = cfg
         self.cfg_dataset_transforms = cfg_dataset_transforms
 
-        log.info('Initializing load of raw data')
-        raw_train, raw_val, raw_test = self.load_data()
+        log.info('Loading raw data')
+        raw = self.load_raw()
+
+        log.info(f'Initializing the {cfg.meta_type.value} type')
+        # TODO: there is no support for the tabular hf datasets (e.g. set_sizes, preprocess_raw)
+        self.meta = create_meta(cfg.meta_type)
 
         log.info('Initializing preprocessing raw data')
-        mapper, (raw_train, raw_val, raw_test) = self.preprocess_data([raw_train, raw_val, raw_test])
-        
-        log.info(f'Initializing the {cfg.meta_type.value} type')
-        # TODO: there is no support for the tabular hf datasets (e.g. set_sizes)
-        self.meta = create_meta(cfg.meta_type)
+        raw = self.preprocess_data(raw)
+
+        log.info('Initializing split of raw data')
+        raw_train, raw_val, raw_test = self.split_raw(raw)
 
         upd_dict = {
             'set_max_len': MAX_LEN,
-            'prepare_textual_params': (raw_train, mapper)
+            'prepare_textual_params': (raw_train)
         }
         log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
@@ -39,13 +44,14 @@ class HuggingFaceBuilder():
         train_t, train_tt, val_t, val_tt, test_t, test_tt = assemble_transforms(self.cfg_dataset_transforms, self.meta)
         
         log.info('Initializing Datasets')
-        self.train_ds = HfDataset(raw_train, mapper, train_t, train_tt)
-        self.val_ds = HfDataset(raw_val, mapper, val_t, val_tt)
-        self.test_ds = HfDataset(raw_test, mapper, test_t, test_tt) if raw_test is not None else None
+        self.train_ds = HfDataset(raw_train, train_t, train_tt)
+        self.val_ds = HfDataset(raw_val, val_t, val_tt)
+        self.test_ds = HfDataset(raw_test, test_t, test_tt)
         
         upd_dict = {
             'set_task': cfg.task,
             'set_sizes': self.train_ds,
+            'set_input_keys': self.train_ds[0]
         }
         log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
@@ -61,70 +67,82 @@ class HuggingFaceBuilder():
     
     def get_meta(self):
         return self.meta
-
-    def load_data(self):
+    
+    def load_raw(self):
         kwargs = self.cfg.load_ds_args
         kwargs = {
             'path': self.cfg.id,
             'name': self.cfg.name,
             **kwargs
         }
-        splits = [
-            self.cfg.train_split,
-            self.cfg.val_split,
-            self.cfg.test_split
-        ]
-        raws = []
-        for split in splits:
-            kwargs = {
-                **kwargs,
-                'split': split
-            }
-            if split is None:
-                raws.append(None)
-            else:
-                raws.append(load_dataset(**kwargs))
-        return tuple(raws)
+        return load_dataset(**kwargs)
     
-    # TODO: refactor later for any case to return standardized dictionary, easier to control
-    def preprocess_data(self, raws):
-        if self.cfg.meta_type.value == 'textual':
-            log.info('Preprocessing Textual datasets with "distilbert-base-uncased" tokenizer')
-            tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased", use_fast=True)
-            
-            def tokenize_fn(batch):
-                texts = batch[self.cfg.mapper.x_mapping]
-                return {
-                    'tokens': [tokenizer.tokenize(t) for t in texts]
-                }
-            for i, raw in enumerate(raws):
-                if raw is not None: 
-                    raws[i] = raw.map(tokenize_fn, batched=True, num_proc=4)
-            log.info('Preparing mapper')
-            self.cfg.mapper.x_mapping = 'tokens'
-            mapper = prepare_mapper(self.cfg.mapper)
-            return mapper, tuple(raws)
-        log.info('Preparing mapper')
-        mapper = prepare_mapper(self.cfg.mapper)
-        return mapper, tuple(raws)
+    def preprocess_data(self, raw):
+        def normalize_inputs(batch):
+            x_keys = self.cfg.x_keys
+            y_keys = self.cfg.y_keys
+
+            # return {
+            #     'x': {k: batch[k] for k in x_keys},
+            #     'y': {k: batch[k] for k in y_keys},
+            # }
+            # TODO: need to extend functionality to be able to preprocess x dict
+            return {
+                'x': batch[x_keys[0]],
+                'y': batch[y_keys[0]]
+            }
+
+        log.info('Normalizing raw data to (x, y)')
+        ds = raw.map(normalize_inputs, batched=True, num_proc=4)
+        ds = ds.select_columns(['x', 'y'])
+        # ds = ds.remove_columns([c for c in ds.column_names if c not in ('x', 'y')])
+
+        ds = self.meta.preprocess_raw(ds)
+
+        return ds
+
+    def split_raw(self, raw):
+        if not isinstance(raw, DatasetDict):
+            raw = DatasetDict({'data': raw})
+
+        train = raw.get(self.cfg.splits.train)
+        val = raw.get(self.cfg.splits.val)
+        test = raw.get(self.cfg.splits.test)
+
+        if val is None:
+            log.info('Validation set is not configured, falling back to ratios split')
+            tmp_split = train.train_test_split(test_size=self.cfg.ratios.val)
+            train = tmp_split['train']
+            val = tmp_split['test']
+
+        if test is None:
+            log.info('Test set is not configured, falling back to ratios split')
+            tmp_split = train.train_test_split(test_size=self.cfg.ratios.test, seed=seed)
+            train = tmp_split['train']
+            test = tmp_split['test']
+
+        log.info(f'Train size: {len(train)}, Validation size: {len(val)}, Test size: {len(test)}')
+        return train, val, test
+    
 
 class HfDataset(Dataset):
-    def __init__(self, raw_ds, mapper, transform, target_transform):
+    def __init__(self, raw_ds, transform, target_transform):
         self.ds = raw_ds
-        self.mapper = mapper
         self.transform = transform
         self.target_transform = target_transform
 
     def __getitem__(self, i):
         raw_dict = self.ds[i]
-        X, target = self.mapper(raw_dict)
+        X, target = raw_dict['x'], raw_dict['y']
         if self.transform is not None:
             X = self.transform(X)
         
         if self.target_transform is not None:
             target = self.target_transform(target)
-
-        return X, target
+        if isinstance(X, dict):
+            return {'X': X, 'y': target}, i
+        
+        return {'X': {'X':X}, 'y': target}, i
     
     def __len__(self):
         return len(self.ds)

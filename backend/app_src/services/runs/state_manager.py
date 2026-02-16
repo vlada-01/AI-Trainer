@@ -77,4 +77,4 @@ RUN_TYPE_MAPPING = {
 def get_state_mappings(run_type):
     if run_type not in RUN_TYPE_MAPPING:
         raise ValueError(f'Run type "{run_type}" is not present in the RUN_TYPE_MAPPING')
-    return RUN_TYPE_MAPPING[run_type](run_type)
+    return RUN_TYPE_MAPPING[run_type]()

@@ -12,7 +12,7 @@ class JobResponse(BaseModel):
     id: str
     job_type: StateCode
     status: Literal['pending', 'in_progress', 'success', 'failed']
-    status_details: Optional[Any] = None
+    # status_details: Optional[Any] = None
     error: Optional[ErrorInfo] = None
     created_at: str
     expires_at: str

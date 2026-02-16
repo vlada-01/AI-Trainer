@@ -1,5 +1,5 @@
-import re
 import torch
+from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 
 from model_src.data.metas.meta import MetaData, MetaTypes
@@ -16,11 +16,31 @@ class TextualMetaData(MetaData):
         self.max_len = None
         self.input_size = None
         self.output_size = None
+        self.input_keys = None
+
+    def preprocess_raw(self, ds):
+        log.info('Preprocessing Textual datasets with "distilbert-base-uncased" tokenizer')
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased", use_fast=True)
+        
+        def tokenize_fn(batch):
+            texts = batch['x']
+            return {
+                'x': [tokenizer.tokenize(t) for t in texts]
+            }
+        
+        ds = ds.map(tokenize_fn, batched=True, num_proc=4)
+        return ds
 
     def update(self, upd_dict):
         for k, v in upd_dict.items():
             if hasattr(self, k):
                 if callable(getattr(self, k)):
+                    # _, _, field_name = k.partition('set_')
+                    # if hasattr(self, field_name):
+                    #     if getattr(self, field_name) is not None:
+                    #         log.info(f'TextualMetaData the field "{field_name}" is already set')
+                    # else:
+                    #     raise ValueError(f'TextualMetaData does not have field name: {k}')
                     log.info(f'Calling TextualMetaData attr "{k}"')
                     fn = getattr(self, k)
                     if isinstance(v, dict):
@@ -30,7 +50,7 @@ class TextualMetaData(MetaData):
                     else:
                         fn(v)
                 else:
-                    raise ValueError(f'TextualMetaData does not have callable {k}')
+                    raise ValueError(f'TextualMetaData does not have callable: {k}')
             else:
                 log.warning(f'TextualMetaData does not have attr {k}')
 
@@ -40,6 +60,9 @@ class TextualMetaData(MetaData):
             raise NameError(f'Name resolve_{name.value} is not supported in {type(self)}')
         return name, fn()
     
+    def get_input_keys(self):
+        return self.input_keys
+
     def get_necessary_sizes(self):
         return {
             'input_size': self.input_size,
@@ -60,8 +83,9 @@ class TextualMetaData(MetaData):
             'task': self.task,
             'vocab': self.vocab,
             'max_len': self.max_len,
-            'input_size': list(self.input_size),
-            'output_size': list(self.output_size),
+            'input_size': self.input_size,
+            'output_size': self.output_size,
+            'input_keys': self.input_keys,
             'task': self.task,
         }
     
@@ -81,7 +105,7 @@ class TextualMetaData(MetaData):
     # TODO: 
     # Should improve the vocab logic, by adding max_size
     # add more frequent tokens first
-    def prepare_textual_params(self, raw_train, mapper):
+    def prepare_textual_params(self, raw_train):
         log.info('Preparing vocabulary')
         vocab = {
             '<pad>': 0,
@@ -95,13 +119,13 @@ class TextualMetaData(MetaData):
         max_attn_mask = 0
         for i in range(len(raw_train)):
             raw_dict = raw_train[i]
-            tokens, _ = mapper(raw_dict)
-            if len(tokens) + 2 > self.max_len:
+            x, _ = raw_dict['x']
+            if len(x) + 2 > self.max_len:
                 greater_then_attn_mask += 1
-            if len(tokens) + 2 > max_attn_mask:
-                max_attn_mask = len(tokens) + 2
-            attn_sizes.append(len(tokens) + 2)
-            for token in tokens:
+            if len(x) + 2 > max_attn_mask:
+                max_attn_mask = len(x) + 2
+            attn_sizes.append(len(x) + 2)
+            for token in x:
                 if token not in vocab:
                     vocab[token] = vocab_id
                     vocab_id += 1
@@ -121,12 +145,12 @@ class TextualMetaData(MetaData):
         log.info('Updating TextualMetaData sizes')
         
         if self.task == 'regression':
-            X, y = train_ds[0]
+            sample_dict = train_ds[0]
+            X, y = sample_dict['X'], sample_dict['y']
             self.input_size = {
-                'input_ids': X['input_ids'].size(),
-                'attn_mask': X['attention_mask'].size()
+                k: list(v.size()) for k, v in X.items()
             }
-            self.output_size = y.size()
+            self.output_size = list(y.size())
             return
 
         loader = DataLoader(train_ds, batch_size=512, shuffle=False, num_workers=0)
@@ -143,15 +167,19 @@ class TextualMetaData(MetaData):
 
         log.info(f'Number of classes: {num_classes}')
         
-        X, _ = train_ds[0]
+        sample_dict = train_ds[0]
+        X, y = sample_dict['X'], sample_dict['y']
         self.input_size = {
-            'input_ids': X['input_ids'].size(),
-            'attn_mask': X['attention_mask'].size()
+            k: list(v.size()) for k, v in X.items()
         }
-        self.output_size = torch.Size([num_classes])
+        self.output_size = list(torch.Size([num_classes]))
 
     def set_task(self, task):
         self.task = task
 
     def set_max_len(self, max_len):
         self.max_len = max_len
+
+    def set_input_keys(self, sample):
+        X_dict = sample['X']
+        self.input_keys = [k for k in X_dict.keys()]

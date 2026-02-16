@@ -39,7 +39,8 @@ def train(predictor, dl, train_params):
     num_of_iters = train_params.num_of_iters
     loss_fn = train_params.loss_fn
     opt = train_params.optimizer
-    for batch, (X, y, _) in enumerate(dl):
+    for i, (batch, _) in enumerate(dl):
+        X, y = batch['X'], batch['y']
         if isinstance(X, dict):
             X = {k: v.to(device) for k, v in X.items()}
         else:
@@ -53,9 +54,9 @@ def train(predictor, dl, train_params):
             opt.step()
             opt.zero_grad()
 
-        if batch % 100 == 0:
+        if i % 100 == 0:
             # TODO: fix this for dictionary
-            loss, current = loss.item(), (batch + 1) * len(X)
+            loss, current = loss.item(), (i + 1) * len(X)
             log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     return predictor
 

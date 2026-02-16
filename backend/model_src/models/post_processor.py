@@ -98,7 +98,8 @@ class Calibration():
         eps = 1e-3
 
         for _ in range(3):
-            for X, y, _ in dl:
+            for batch, _ in dl:
+                X, y = batch['X'], batch['y']
                 if isinstance(X, dict):
                     X = {k: v.to(device) for k, v in X.items()}
                 else:
@@ -151,7 +152,8 @@ class GlobalThreshold():
         
         model.eval()
         with torch.no_grad():
-            for X, y, _ in dl:
+            for batch, _ in dl:
+                X, y = batch['X'], batch['y']
                 if isinstance(X, dict):
                     X = {k: v.to(device) for k, v in X.items()}
                 else:

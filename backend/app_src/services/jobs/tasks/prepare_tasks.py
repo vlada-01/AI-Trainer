@@ -26,7 +26,8 @@ def atomic_prepare_dataset(cfg):
         'cached_dl_cfg': cfg
     }
     result = {
-        'sample_size': meta.get_necessary_sizes()
+        'sample_size': meta.get_necessary_sizes(),
+        'input_keys': meta.get_input_keys()
     }
     log.info('Prepare dataset is successfullty finished')
     return result, ctx_dict
@@ -45,6 +46,7 @@ def atomic_prepare_predictor(cfg):
     log.info('Prepare Predictor is successfully finished')
     return result, ctx_dict
 
+# TODO: need to check chain, component cfg
 def atomic_prepare_train_params(predictor, meta, train_cfg):
     log.info('Initializing prepare training parameters process')
     model = predictor.get_model()

@@ -19,6 +19,7 @@ log = get_logger(__name__)
 
 router = APIRouter(prefix="/{run_id}/prepare-jobs", tags=["jobs"])
 
+# SKLEARN is deprecated, might be deleted
 @router.post('/dataset', response_model=JobResponse)
 async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareDatasetJobRequest):
     try:
@@ -26,7 +27,7 @@ async def prepare_dataset(request: Request, run_id: str, data: requests.PrepareD
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_ds)
-        params = (data)
+        params = (data, )
         fn = prepare.atomic_prepare_dataset
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
@@ -47,7 +48,7 @@ async def prepare_model(request: Request, run_id: str, data: requests.PrepareMod
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_model)
-        params = (data) #written like this, seems like there is no dependency from ds
+        params = (data, ) #written like this, seems like there is no dependency from ds
         fn = prepare.atomic_prepare_predictor
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job
@@ -90,7 +91,7 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareCom
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_default)
-        params = (data)
+        params = (data, )
         fn = prepare.atomic_prepare_complete_train
         asyncio.create_task(start_job(run, job.id, fn, params))
         return job

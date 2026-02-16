@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Literal, Union, Tuple, Optional, List
+from typing import Annotated, Literal, Union, Tuple, Optional, List
 
 from model_src.models.model_types.dag import AvailableNodeTypes
 from model_src.models.layers.layer_factory import AvailableLayers
@@ -58,7 +58,8 @@ class TransformerEncoder(BaseModel):
     dropout: float
 
 # TODO: update usages in other places, fine-tune changed from List[Union] to Union
-Layers = Union[
+Layers = Annotated[
+    Union[
         BatchNorm2dLayer,
         Conv2DLayer,
         LinearLayer,
@@ -69,7 +70,9 @@ Layers = Union[
         PositionalEmbedding,
         Pooling,
         TransformerEncoder
-    ]
+        ],
+    Field(discriminator="type")
+]
 
 class InputCfg(BaseModel):
     type: Literal[AvailableNodeTypes.input]
@@ -111,8 +114,12 @@ class ComponentCfg(BaseModel):
         for u, v in self.edges:
             if u not in node_ids or v not in node_ids:
                 raise ValueError(f'Component configuration error: Invalid edge ({u},{v})')
+        return self
 
-NodeCfg = Union[InputCfg, LayerCfg, ChainCfg, ComponentCfg]    
+NodeCfg = Annotated[
+    Union[InputCfg, LayerCfg, ChainCfg, ComponentCfg],
+    Field(discriminator="type")
+]
 
 class DAGCfg(BaseModel):
     node_ids: List[str]

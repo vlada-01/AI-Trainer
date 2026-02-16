@@ -19,9 +19,11 @@ router.include_router(prepare_router)
 @router.post('/', response_model=RunCtxResponse)
 async def new_run(request: Request, data: NewRunCfg):
     try:
-        ctx = request.state.ctx
+        log.info('Requesting new run initialization')
+        ctx = request.app.state.ctx
         run = await create_run(ctx, data)
         kwargs = await run.get_info()
+        log.info('New Run is successfully prepared')
         return RunCtxResponse(**kwargs)
     except Exception as e:
         print(traceback.format_exc())
@@ -37,10 +39,10 @@ async def new_run(request: Request, data: NewRunCfg):
 @router.get('/{run_id}', response_model=RunCtxResponse)
 async def get_current_status(request: Request, run_id: str):
     try:
-        ctx = request.state.ctx
+        ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         kwargs = await run.get_info()
-        return await RunCtxResponse(**kwargs)
+        return RunCtxResponse(**kwargs)
     except Exception as e:
         print(traceback.format_exc())
         raise  HTTPException(

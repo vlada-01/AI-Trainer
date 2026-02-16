@@ -16,7 +16,7 @@ from common.logger import get_logger
 log = get_logger(__name__)
 
 async def try_create_job(ctx: RunContext, state_code: StateCode) -> JobResponse:
-    if await ctx.is_valid_to_add(state_code): 
+    if not await ctx.is_valid_to_add(state_code): 
         raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
     job_id = uuid4().hex #TODO: add check for job_id already present
     job = JobResponse(
@@ -38,7 +38,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         result, ctx_dict = await asyncio.to_thread(task_fn, *params)
         await ctx.update(ctx_dict)
 
-        ctx.move_state(job_id)
+        await ctx.move_state(job_id)
         await update_job(
             ctx,
             job_id,
@@ -46,12 +46,13 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
             status_details=result
         )
     except Exception as e:
+        print(traceback.format_exc())
         # TODO: finishes job but, does not send to client that it failed, until client requests it again
         await update_job(
             ctx,
             job_id,
             status="failed",
-            status_details="Model preparation failed",
+            status_details="",
             error=ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e),
