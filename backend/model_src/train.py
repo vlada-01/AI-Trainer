@@ -34,12 +34,14 @@ def start_train(predictor, train_dl, val_dl, train_params, log_train_metrics):
 
 def train(predictor, dl, train_params):
     size = len(dl.dataset)
+
     predictor.get_model().train()
     device = train_params.device
     num_of_iters = train_params.num_of_iters
     loss_fn = train_params.loss_fn
     opt = train_params.optimizer
-    for i, (batch, _) in enumerate(dl):
+    
+    for i, (batch, indices) in enumerate(dl):
         X, y = batch['X'], batch['y']
         if isinstance(X, dict):
             X = {k: v.to(device) for k, v in X.items()}
@@ -55,8 +57,7 @@ def train(predictor, dl, train_params):
             opt.zero_grad()
 
         if i % 100 == 0:
-            # TODO: fix this for dictionary
-            loss, current = loss.item(), (i + 1) * len(X)
+            loss, current = loss.item(), (i + 1) * len(indices)
             log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
     return predictor
 

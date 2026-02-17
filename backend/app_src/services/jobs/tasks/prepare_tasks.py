@@ -42,7 +42,7 @@ def atomic_prepare_predictor(cfg):
         'predictor': predictor,
         'cached_model_cfg': cfg
     }
-    result = ''
+    result = 'Predictor is successfully prepared'
     log.info('Prepare Predictor is successfully finished')
     return result, ctx_dict
 
@@ -56,7 +56,7 @@ def atomic_prepare_train_params(predictor, meta, train_cfg):
         'train_params': train_params,
         'cached_train_cfg': train_cfg,
     }
-    result = ''
+    result = 'Train Params are successfully prepared'
     log.info('Prepare training parameters process is successfully finished')    
     return result, ctx_dict
 
@@ -72,7 +72,7 @@ def atomic_prepare_complete_train(cfgs):
     
     _, ctx_dict_3 = atomic_prepare_train_params(predictor, meta, train_cfg)
     
-    result = ''
+    result = 'Configurations are successfully prepared'
     ctx_dict = {
         **ctx_dict_1,
         **ctx_dict_2,
@@ -122,7 +122,7 @@ def atomic_prepare_post_process(predictor, val_dl, train_params, pp_cfg):
 
     updated_pp_cfg = predictor.get_pp().get_cfg()
 
-    result = ''
+    result = 'Post Processor is successfully prepared'
     ctx_dict = {
         'cached_pp_cfg': updated_pp_cfg
     }

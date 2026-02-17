@@ -14,13 +14,12 @@ def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_
     exp_name = data.exp_name
     log.info(f'Setting experiment name: {exp_name}')
     mlflow.set_experiment(exp_name)
-
     #TODO: data.model_name is not used
 
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
-        predictor = train_model(predictor, train, train_params)
+        predictor = train_model(predictor, train, val, train_params)
         _, val_error_analysis_dict = evaluate(predictor, val, train_params, collect_error_analysis=True)
         run_id = mlflow.active_run().info.run_id
         with ArtifactWriter(job_id, run_id) as w:

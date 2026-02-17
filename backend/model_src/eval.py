@@ -2,7 +2,14 @@ import torch
 
 from model_src.prepare_train.metrics import reset_metrics, update_metrics, show_results
 
+from common.logger import get_logger
+
+log = get_logger(__name__)
+
 def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
+    size = len(dataloader.dataset)
+    batch_size = dataloader.batch_size
+
     device = train_params.device
     loss_fn = train_params.loss_fn
     metrics = train_params.metrics
@@ -12,7 +19,7 @@ def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
     predictor.get_model().to(device)
     predictor.get_model().eval()
     with torch.no_grad():
-        for batch, indices in dataloader:
+        for i, (batch, indices) in enumerate(dataloader):
             X, y = batch['X'], batch['y']
             if isinstance(X, dict):
                 X = {k: v.to(device) for k, v in X.items()}
@@ -27,6 +34,11 @@ def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
             
             preds = predictor.preds(logits)
             update_metrics(metrics, preds, y)
+            
+            if i % 100 == 0:
+                loss, current = loss, (i + 1) * len(indices)
+                log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
     metric_results = show_results(metrics)
     metric_results.append(('loss', loss))
     if collect_error_analysis:

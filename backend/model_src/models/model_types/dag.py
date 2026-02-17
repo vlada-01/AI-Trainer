@@ -73,8 +73,8 @@ class DAGNet(nn.Module):
         self.state = x_dict
         for id in self.sorted_ids:
             in_keys = self.nodes[id].get_in_keys()
-            in_kwargs = {k: self.state[k] for k in in_keys}
-            out = self.nodes[id](**in_kwargs)
+            xs = (self.state[k] for k in in_keys)
+            out = self.nodes[id](*xs)
             out = out if isinstance(out, (list, tuple)) else (out, )
             out_keys = self.nodes[id].get_out_keys()
             if len(out) != len(out_keys):
