@@ -72,23 +72,6 @@ class DataTransforms(BaseModel):
     valid: TransformConfig
     test: TransformConfig
 
-class SklearnConfig(BaseModel):
-    dataset_provider: Literal[AvailableProviders.sklearn] = AvailableProviders.sklearn
-    dataset_fn: str
-    task: Union[Literal['classification', 'regression']]
-    stratify: Optional[bool] = True
-    test_size: float = Field(..., le=1.0, ge=0.0)
-    val_size: float = Field(..., le=1.0, ge=0.0)
-    
-    @model_validator(mode="after")
-    def check_split_sizes(self):
-        if self.test_size is not None and self.test_size > 0.5:
-            raise ValueError(f'{self.test_size} > 0.5 is not okay')
-        elif self.test_size is not None:
-            if self.val_size > (1.0 - self.test_size) / 2:
-                raise ValueError(f'{self.val_size} > {(1.0 - self.test_size) / 2} can not be greater than half of the remaining portion')
-        return self
-
 class Splits(BaseModel):
     train: str
     val: Optional[str] = None
@@ -118,8 +101,6 @@ class HuggingFaceConfig(BaseModel):
         ]
     splits: Splits
     ratios: Ratios
-    val_size: float = Field(..., ge=0.0, le=1.0)
-    test_size: float = Field(..., ge=0.0, le=1.0)
     load_ds_args: Dict[str, Any] #TODO: can be improved
     x_keys: List[str]
     y_keys: List[str]

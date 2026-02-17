@@ -2,7 +2,6 @@ from enum import Enum
 from torch.utils.data import DataLoader, Dataset
 from pprint import pformat
 
-from model_src.data.dataset_builders.sklearn_builder import SklearnDataBuilder
 from model_src.data.dataset_builders.hf_builder import HuggingFaceBuilder
 
 from model_src.data.transforms import compose_transforms
@@ -16,7 +15,6 @@ class AvailableProviders(str, Enum):
     hf = 'hugging face'
 
 BUILDER_MAP = {
-    AvailableProviders.sklearn: SklearnDataBuilder,
     AvailableProviders.hf: HuggingFaceBuilder
 }
 

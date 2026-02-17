@@ -1,14 +1,14 @@
 from pydantic import BaseModel, model_validator
 from typing import Optional, List, Union
 
-from app_src.schemas.data import SklearnConfig, HuggingFaceConfig, DataTransforms
+from app_src.schemas.data import HuggingFaceConfig, DataTransforms
 from app_src.schemas.models import DAGCfg, NodeCfg
 from app_src.schemas.train import OptimizerConfig, LrDecay, LossFnConfig, Metrics
 from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
 from app_src.schemas.train import Calibration, GlobalThreshold
 
 class PrepareDatasetJobRequest(BaseModel):
-    data_config: Union[SklearnConfig, HuggingFaceConfig]
+    data_config: HuggingFaceConfig
     dataset_transforms: DataTransforms
     batch_size: Optional[int] = 1
     shuffle: Optional[bool] = False
