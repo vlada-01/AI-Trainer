@@ -69,7 +69,6 @@ async def prepare_train(request: Request, run_id: str, data: requests.PrepareTra
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_default)
-        # TODO: need to prevent create_job if model or data is not loaded
         params = await run.get_prepare_train_params() + (data, )
         fn = prepare.atomic_prepare_train_params
         asyncio.create_task(start_job(run, job.id, fn, params))
@@ -130,12 +129,13 @@ async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJ
 @router.post('/post-process', response_model=JobResponse)
 async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
     try:
+        log.info('Requesting post processor preparation')
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.prepare_pp)
         params = await run.get_post_process_params() + (data, )
         fn = prepare.atomic_prepare_post_process
-        asyncio.create_task(start_job(ctx, job.id, fn, params))
+        asyncio.create_task(start_job(run, job.id, fn, params))
         return job
     except Exception as e:
         print(traceback.format_exc())

@@ -14,7 +14,6 @@ log = get_logger(__name__)
 
 
 # TODO: Need to test All transformation types
-# TODO: If dataset does not provide validation set, need to manually split train dataset
 # TODO: need to add support to load meta by cfg
 def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
@@ -33,8 +32,7 @@ def atomic_prepare_dataset(cfg):
     return result, ctx_dict
 
 # TODO: need to add check for input/output size connections
-# TODO: need to check for other layer types
-# TODO: needs to return back to add some more input types...
+# TODO: need to check if component cfg is working
 def atomic_prepare_predictor(cfg):
     log.info('Initializing prepare predictor process')
     predictor = build_predictor(cfg)
@@ -46,7 +44,6 @@ def atomic_prepare_predictor(cfg):
     log.info('Prepare Predictor is successfully finished')
     return result, ctx_dict
 
-# TODO: need to check chain, component cfg
 def atomic_prepare_train_params(predictor, meta, train_cfg):
     log.info('Initializing prepare training parameters process')
     model = predictor.get_model()
@@ -85,25 +82,26 @@ def atomic_prepare_default_from_run(cfg, job_id):
     log.info('Initiazling prepare train with configurations from run')
     run_id = cfg.run_id
 
-    # TODO: update this
     with ArtifactReader(job_id, run_id) as r:
         ds_cfg = r.load_data_cfg()
-        model_cfg = r.load_data_cfg()
+        # TODO: add later meta, when atomic_prepare_dataset is updated
+        model_cfg = r.load_model_cfg()
         model_state_dict = r.load_model_state()
-        train_cfg = r.load_data_cfg()
+        train_cfg = r.load_train_cfg()
     
     cfgs = requests.PrepareCompleteTrainJobRequest(
         dataset_cfg=requests.PrepareDatasetJobRequest(**ds_cfg),
         model_cfg=requests.PrepareModelJobRequest(**model_cfg),
         train_cfg=requests.PrepareTrainJobRequest(**train_cfg)
     )
-    result, ctx_dict = atomic_prepare_complete_train(cfgs)
+    _, ctx_dict = atomic_prepare_complete_train(cfgs)
     ctx_dict['predictor'] = ctx_dict['predictor'].get_model().load_state_dict(model_state_dict)
     
     ctx_dict = {
         **ctx_dict,
         'cached_mlflow_run_id': run_id
     }
+    result = 'Configurations from run are successfully prepared'
     log.info('Prepare train with configurations from run is successfully finished')
     return result, ctx_dict
 
@@ -124,6 +122,7 @@ def atomic_prepare_post_process(predictor, val_dl, train_params, pp_cfg):
 
     result = 'Post Processor is successfully prepared'
     ctx_dict = {
+        'predictor': predictor,
         'cached_pp_cfg': updated_pp_cfg
     }
 

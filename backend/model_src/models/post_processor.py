@@ -100,10 +100,7 @@ class Calibration():
         for _ in range(3):
             for batch, _ in dl:
                 X, y = batch['X'], batch['y']
-                if isinstance(X, dict):
-                    X = {k: v.to(device) for k, v in X.items()}
-                else:
-                    X = X.to(device)
+                X = {k: v.to(device) for k, v in X.items()}
                 y = y.to(device)
 
                 logits = model(X)
@@ -154,10 +151,7 @@ class GlobalThreshold():
         with torch.no_grad():
             for batch, _ in dl:
                 X, y = batch['X'], batch['y']
-                if isinstance(X, dict):
-                    X = {k: v.to(device) for k, v in X.items()}
-                else:
-                    X = X.to(device)
+                X = {k: v.to(device) for k, v in X.items()}
                 y = y.to(device)
                 logits = model(X)
                 preds = logits / T

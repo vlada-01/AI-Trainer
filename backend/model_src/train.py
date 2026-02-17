@@ -43,10 +43,7 @@ def train(predictor, dl, train_params):
     
     for i, (batch, indices) in enumerate(dl):
         X, y = batch['X'], batch['y']
-        if isinstance(X, dict):
-            X = {k: v.to(device) for k, v in X.items()}
-        else:
-            X = X.to(device)
+        X = {k: v.to(device) for k, v in X.items()}
         y = y.to(device)
         for _ in range(num_of_iters):
             logits = predictor.logits(X)

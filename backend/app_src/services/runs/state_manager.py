@@ -4,7 +4,7 @@ class AvailableRunTypes(Enum):
     base = 'base'
     fine_tune = 'fine_tune'
     post_process = 'post_process'
-    # final_evaluation = 'final_evaluation'
+    final_evaluation = 'final_evaluation'
 
 # TODO: need to update this crap, final_eval, pp, and fine tune
 
@@ -59,7 +59,7 @@ def get_post_process_run_states():
 def get_final_evaluation_run_states():
     FINAL_EVAL_RUN_STATES = {
         StateCode.draft: {StateCode.prepare_default_run},
-        StateCode.prepare_default_run: {StateCode.prepare_pp},
+        StateCode.prepare_default_run: {StateCode.prepare_pp, StateCode.final_eval},
         StateCode.prepare_pp: {StateCode.final_eval},
         StateCode.final_eval: {StateCode.done, StateCode.failed},
         StateCode.done: set(),
@@ -71,7 +71,7 @@ RUN_TYPE_MAPPING = {
     AvailableRunTypes.base: get_base_run_states,
     AvailableRunTypes.fine_tune: get_fine_tune_states,
     AvailableRunTypes.post_process: get_post_process_run_states,
-    # AvailableRunTypes.final_evaluation:  get_final_evaluation_run_states
+    AvailableRunTypes.final_evaluation:  get_final_evaluation_run_states
 }
 
 def get_state_mappings(run_type):

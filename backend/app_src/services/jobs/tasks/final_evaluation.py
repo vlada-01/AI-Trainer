@@ -31,9 +31,9 @@ def atomic_final_eval(predictor, test, meta, train_params, dl_cfg, model_cfg, tr
             w.save_meta(meta.to_dict())
             w.save_model_cfg(model_cfg.model_dump())
             w.save_model_state(predictor.get_model().state_dict())
+            w.save_post_processor_cfg(pp_cfg.model_dump())
             w.save_train_cfg(train_cfg.model_dump())
             w.save_error_analysis(dict_error_analysis)
-            w.save_post_processor_cfg(pp_cfg.model_dump())
             w.log_artifacts()
 
         parent_url = f'{mlflow_public_uri}/#/experiments/{exp_id}/runs/{parent_id}'

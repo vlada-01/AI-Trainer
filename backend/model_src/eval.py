@@ -21,10 +21,7 @@ def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
     with torch.no_grad():
         for i, (batch, indices) in enumerate(dataloader):
             X, y = batch['X'], batch['y']
-            if isinstance(X, dict):
-                X = {k: v.to(device) for k, v in X.items()}
-            else:
-                X = X.to(device)
+            X = {k: v.to(device) for k, v in X.items()}
             y = y.to(device)
             logits = predictor.logits(X)
             loss += loss_fn(logits, y).item()
@@ -53,10 +50,7 @@ def predict(predictor, test_dl, device, metrics, error_analysis):
     with torch.no_grad():
         for batch, indices in test_dl:
             X, y = batch['X'], batch['y']
-            if isinstance(X, dict):
-                X = {k: v.to(device) for k, v in X.items()}
-            else:
-                X = X.to(device)
+            X = {k: v.to(device) for k, v in X.items()}
             y = y.to(device)
             logits = predictor.logits(X)
             preds = predictor.preds(logits)

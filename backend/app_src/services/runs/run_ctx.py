@@ -84,6 +84,7 @@ class RunContext:
         async with self.run_ctx_lock:
             job = self.jobs[job_id]
             self.state = job.job_type
+
     async def get_prepare_train_params(self):
         async with self.run_ctx_lock:
             return (self.predictor, self.meta)

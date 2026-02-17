@@ -17,7 +17,7 @@ PATHS_MAP = {
     'model_state_rel_path': Path('predictor/model.pt'),
     'pp_cfg_rel_path': Path('predictor/pp_cfg.json'),
     'train_cfg_rel_path': Path('train/train_cfg.json'),
-    'error_analysis': Path('error_analysis/error_analysis.json')
+    'error_analysis_rel_path': Path('error_analysis/error_analysis.json')
 }   
 
 class ArtifactWriter:
@@ -29,10 +29,10 @@ class ArtifactWriter:
         return self
 
     def __exit__(self, exc_type, exc, tb):
-        # TODO: in case job breaks, this can be problematic, for now use writer only in the end of the run
         shutil.rmtree(self.root, ignore_errors=True)
         return False
     
+    # TODO: need to be careful to not introduce two files with same name, breaks ArtifactReader logic
     @staticmethod
     def write_text(p: Path, json_cfg):
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -71,7 +71,7 @@ class ArtifactWriter:
 
     def save_error_analysis(self, error_analysis: dict):
         json_cfg = json.dumps(error_analysis, indent=2)
-        p = self.root / PATHS_MAP['error_analysis']
+        p = self.root / PATHS_MAP['error_analysis_rel_path']
         self.write_text(p, json_cfg)
 
     def log_artifacts(self):
@@ -80,7 +80,7 @@ class ArtifactWriter:
 class ArtifactReader:
     def __init__(self, job_id, run_id):
         self.run_id = run_id
-        self.root = Path('/artifacts')
+        self.uri = f'runs:/{run_id}/'
         self.cache_dir = Path(f'/cache/{job_id}/{run_id}')
 
     def __enter__(self):
@@ -91,10 +91,9 @@ class ArtifactReader:
         shutil.rmtree(self.cache_dir, ignore_errors=True)
         return False
     
-    def download(self, p):
+    def download(self, uri):
         return mlflow.artifacts.download_artifacts(
-            run_id=self.run_id,
-            artifact_path=p,
+            artifact_uri=uri,
             dst_path=self.cache_dir
             )
 
@@ -104,36 +103,36 @@ class ArtifactReader:
             return json.load(f)
     
     def load_data_cfg(self):
-        p = self.root / PATHS_MAP['data_cfg_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['data_cfg_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)
     
     def load_meta(self):
-        p = self.root / PATHS_MAP['meta_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['meta_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)
 
     def load_model_cfg(self):
-        p = self.root / PATHS_MAP['model_cfg_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['model_cfg_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)
     
     def load_model_state(self):
-        p = self.root / PATHS_MAP['model_state_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['model_state_rel_path'])
+        download_path = self.download(uri)
         return torch.load(download_path, map_location="cpu")
     
     def load_post_processor_cfg(self):
-        p = self.root / PATHS_MAP['pp_cfg_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['pp_cfg_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)
 
     def load_train_cfg(self):
-        p = self.root / PATHS_MAP['train_cfg_rel_path']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['train_cfg_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)
     
     def load_error_analysis(self):
-        p = self.root / PATHS_MAP['error_analysis']
-        download_path = self.download(p)
+        uri = self.uri + str(PATHS_MAP['error_analysis_rel_path'])
+        download_path = self.download(uri)
         return self.read_json(download_path)

@@ -32,7 +32,7 @@ def atomic_train_model(predictor, train, val, meta, train_params, dl_cfg, model_
             w.save_error_analysis(val_error_analysis_dict)
             w.log_artifacts()
     mlflow.end_run()
-    result = ''
+    result = 'Training is finished successfully'
     ctx_dict = {}
     log.info('Training model process is successfully finished')
     return result, ctx_dict
