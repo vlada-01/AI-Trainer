@@ -17,10 +17,11 @@ log = get_logger(__name__)
 # TODO: need to add support to load meta by cfg
 def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
-    train, val, _, meta =  build_data(cfg)
+    train, val, test, meta =  build_data(cfg)
     ctx_dict = {
         'train': train,
         'val': val,
+        'test': test,
         'meta': meta,
         'cached_dl_cfg': cfg
     }
@@ -95,7 +96,7 @@ def atomic_prepare_default_from_run(cfg, job_id):
         train_cfg=requests.PrepareTrainJobRequest(**train_cfg)
     )
     _, ctx_dict = atomic_prepare_complete_train(cfgs)
-    ctx_dict['predictor'] = ctx_dict['predictor'].get_model().load_state_dict(model_state_dict)
+    ctx_dict['predictor'].get_model().load_state_dict(model_state_dict)
     
     ctx_dict = {
         **ctx_dict,
@@ -126,5 +127,5 @@ def atomic_prepare_post_process(predictor, val_dl, train_params, pp_cfg):
         'cached_pp_cfg': updated_pp_cfg
     }
 
-    log.info('Post processor is successfully finished')
+    log.info('Post processor process is successfully finished')
     return result, ctx_dict

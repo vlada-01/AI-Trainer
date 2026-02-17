@@ -10,11 +10,13 @@ log = get_logger(__name__)
 
 mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 
-def atomic_final_eval(predictor, test, meta, train_params, dl_cfg, model_cfg, train_cfg, pp_cfg, parent_id, data, job_id):
+def atomic_final_eval(predictor, test, meta, train_params, dl_cfg, model_cfg, pp_cfg, train_cfg, parent_id, data, job_id):
     log.info('Initializing final evaluation process')
-    exp_name = train_cfg.exp_name
+    exp_name = data.exp_name
     log.info(f'Setting experiment name: {exp_name}')
     mlflow.set_experiment(exp_name)
+
+    # TODO: the data.model_name is not used, but should be able to
 
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
@@ -23,9 +25,12 @@ def atomic_final_eval(predictor, test, meta, train_params, dl_cfg, model_cfg, tr
         exp_id = mlflow.active_run().info.experiment_id
         run_id = mlflow.active_run().info.run_id
 
-        metric_results, dict_error_analysis = predict(predictor, test, device)
+        metrics = train_params.metrics
+        error_analysis = train_params.error_analysis
 
-        mlflow.log_metrics({f'val_{name.lower()}': metric_val for name, metric_val in metric_results})
+        metric_results, dict_error_analysis = predict(predictor, test, device, metrics, error_analysis)
+
+        mlflow.log_metrics({f'test_{name.lower()}': metric_val for name, metric_val in metric_results})
         with ArtifactWriter(job_id, run_id) as w:
             w.save_data_cfg(dl_cfg.model_dump())
             w.save_meta(meta.to_dict())

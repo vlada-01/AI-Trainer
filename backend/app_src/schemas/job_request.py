@@ -79,4 +79,6 @@ class FineTuneJobRequest(BaseModel):
     new_train_cfg: FtTrainCfg
 
 class FinalEvalJobRequest(BaseModel):
-    new_run_name: str
+    exp_name: str
+    run_name: str
+    model_name: str

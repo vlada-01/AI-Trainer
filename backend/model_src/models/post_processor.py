@@ -47,7 +47,7 @@ class PostProcessor():
         return self.pp_cfg
 
     def train(self, model, dl, device):
-        model.set_pp(None)
+        model.to(device)
         for p in model.parameters():
             p.requires_grad = False
         result = {}
