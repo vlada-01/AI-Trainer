@@ -21,7 +21,8 @@ BUILDER_MAP = {
 def build_data(cfg):
     provider = cfg.data_config.dataset_provider
     log.info(f'Initializing data builder for the provider: {provider.value}')
-    databuilder = BUILDER_MAP[provider](cfg.data_config, cfg.dataset_transforms)
+    preconfigured_meta = cfg.meta_cfg
+    databuilder = BUILDER_MAP[provider](cfg.data_config, cfg.dataset_transforms, preconfigured_meta)
     log.info(f'Databuilder for provider {provider.value} is prepared successfully')
     
     batch_size = cfg.batch_size

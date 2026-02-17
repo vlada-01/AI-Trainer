@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 
 from app_src.schemas.data import HuggingFaceConfig, DataTransforms
 from app_src.schemas.models import DAGCfg, NodeCfg
@@ -12,6 +12,7 @@ class PrepareDatasetJobRequest(BaseModel):
     dataset_transforms: DataTransforms
     batch_size: Optional[int] = 1
     shuffle: Optional[bool] = False
+    meta_cfg: Optional[Dict[str, Any]] = None
 
 class PrepareModelJobRequest(BaseModel):
     nodes: List[NodeCfg]

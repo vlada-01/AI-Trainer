@@ -14,13 +14,21 @@ META_DATA_REGISTRY_MAP = {
     MetaTypes.textual: TextualMetaData
 }
 
-def create_meta(meta_type):
+def create_meta(meta_type, preconfigured_dict):
     if meta_type not in META_DATA_REGISTRY_MAP:
         raise ValueError(f'{meta_type} not supported in Metas')
-    return META_DATA_REGISTRY_MAP[meta_type]()
+    meta = META_DATA_REGISTRY_MAP[meta_type]()
+    for k, v in preconfigured_dict.items():
+        if hasattr(meta, k):
+            log.debug(f'Initializing meta field "{k}" with preconfigured value')
+            setattr(meta, k, v)
+        else:
+            raise ValueError(f'Metatype: {meta_type} does not support field {k}')
+    return meta
 
-def update_meta(meta, upd_dict):
-    meta.update(upd_dict)
+def update_meta(meta, upd_dict, preconfigured=False):
+    if not preconfigured:
+        meta.update(upd_dict)
 
 # TODO: consider adding rebuilder for faster data preparation after initial training
 # def try_rebuild_meta(meta_cfg):

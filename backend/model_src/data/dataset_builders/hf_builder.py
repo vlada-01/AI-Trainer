@@ -16,7 +16,7 @@ seed = int(os.getenv("SEED", "42"))
 MAX_LEN = 256
 
 class HuggingFaceBuilder():
-    def __init__(self, cfg, cfg_dataset_transforms):
+    def __init__(self, cfg, cfg_dataset_transforms, preconfigured_meta=None):
         self.cfg = cfg
         self.cfg_dataset_transforms = cfg_dataset_transforms
 
@@ -25,7 +25,7 @@ class HuggingFaceBuilder():
 
         log.info(f'Initializing the {cfg.meta_type.value} type')
         # TODO: there is no support for the tabular hf datasets (e.g. set_sizes, preprocess_raw)
-        self.meta = create_meta(cfg.meta_type)
+        self.meta = create_meta(cfg.meta_type, preconfigured_meta)
 
         log.info('Initializing preprocessing raw data')
         raw = self.preprocess_data(raw)
@@ -33,12 +33,13 @@ class HuggingFaceBuilder():
         log.info('Initializing split of raw data')
         raw_train, raw_val, raw_test = self.split_raw(raw)
 
-        upd_dict = {
-            'set_max_len': MAX_LEN,
-            'prepare_textual_params': (raw_train)
-        }
-        log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
-        update_meta(self.meta, upd_dict)
+        if preconfigured_meta is None:
+            upd_dict = {
+                'set_max_len': MAX_LEN,
+                'prepare_textual_params': (raw_train)
+            }
+            log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
+            update_meta(self.meta, upd_dict)
 
         log.info('Assembling dataset transformations')
         train_t, train_tt, val_t, val_tt, test_t, test_tt = assemble_transforms(self.cfg_dataset_transforms, self.meta)
@@ -48,13 +49,14 @@ class HuggingFaceBuilder():
         self.val_ds = HfDataset(raw_val, val_t, val_tt)
         self.test_ds = HfDataset(raw_test, test_t, test_tt)
         
-        upd_dict = {
-            'set_task': cfg.task,
-            'set_input_keys': self.train_ds[0],
-            'set_sizes': self.train_ds,
-        }
-        log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
-        update_meta(self.meta, upd_dict)
+        if preconfigured_meta is None:
+            upd_dict = {
+                'set_task': cfg.task,
+                'set_input_keys': self.train_ds[0],
+                'set_sizes': self.train_ds,
+            }
+            log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
+            update_meta(self.meta, upd_dict)
 
     def get_train(self):
         return self.train_ds

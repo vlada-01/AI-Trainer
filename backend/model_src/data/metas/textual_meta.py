@@ -35,12 +35,6 @@ class TextualMetaData(MetaData):
         for k, v in upd_dict.items():
             if hasattr(self, k):
                 if callable(getattr(self, k)):
-                    # _, _, field_name = k.partition('set_')
-                    # if hasattr(self, field_name):
-                    #     if getattr(self, field_name) is not None:
-                    #         log.info(f'TextualMetaData the field "{field_name}" is already set')
-                    # else:
-                    #     raise ValueError(f'TextualMetaData does not have field name: {k}')
                     log.info(f'Calling TextualMetaData attr "{k}"')
                     fn = getattr(self, k)
                     if isinstance(v, dict):

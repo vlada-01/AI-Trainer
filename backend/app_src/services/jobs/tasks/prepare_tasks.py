@@ -85,11 +85,15 @@ def atomic_prepare_default_from_run(cfg, job_id):
 
     with ArtifactReader(job_id, run_id) as r:
         ds_cfg = r.load_data_cfg()
-        # TODO: add later meta, when atomic_prepare_dataset is updated
+        meta_cfg = r.load_meta()
         model_cfg = r.load_model_cfg()
         model_state_dict = r.load_model_state()
         train_cfg = r.load_train_cfg()
     
+    ds_cfg = {
+        **ds_cfg,
+        'meta_cfg': meta_cfg
+    }
     cfgs = requests.PrepareCompleteTrainJobRequest(
         dataset_cfg=requests.PrepareDatasetJobRequest(**ds_cfg),
         model_cfg=requests.PrepareModelJobRequest(**model_cfg),
