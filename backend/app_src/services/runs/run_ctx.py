@@ -142,7 +142,7 @@ class RunContext:
                 expired_ids = [
                     job_id
                     for job_id, job in self.jobs.items()
-                    if (job.expires_at and datetime.fromisoformat(job.expires_at) <= now) or job.status == 'success'
+                    if (job.expires_at and datetime.fromisoformat(job.expires_at) <= now)
                 ]
                 for job_id in expired_ids:
                     del self.jobs[job_id]

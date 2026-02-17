@@ -50,8 +50,8 @@ class HuggingFaceBuilder():
         
         upd_dict = {
             'set_task': cfg.task,
+            'set_input_keys': self.train_ds[0],
             'set_sizes': self.train_ds,
-            'set_input_keys': self.train_ds[0]
         }
         log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
         update_meta(self.meta, upd_dict)
@@ -95,7 +95,6 @@ class HuggingFaceBuilder():
         log.info('Normalizing raw data to (x, y)')
         ds = raw.map(normalize_inputs, batched=True, num_proc=4)
         ds = ds.select_columns(['x', 'y'])
-        # ds = ds.remove_columns([c for c in ds.column_names if c not in ('x', 'y')])
 
         ds = self.meta.preprocess_raw(ds)
 

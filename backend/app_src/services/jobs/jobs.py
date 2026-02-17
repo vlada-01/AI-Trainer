@@ -56,7 +56,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
             error=ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e),
-                traceback=traceback.format_exc().splitlines()
+                # traceback=traceback.format_exc().splitlines()
             )
         )
 

@@ -73,7 +73,7 @@ class DataTransforms(BaseModel):
     test: TransformConfig
 
 class Splits(BaseModel):
-    train: str
+    train: str = 'data'
     val: Optional[str] = None
     test: Optional[str] = None
 

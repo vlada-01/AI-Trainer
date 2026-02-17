@@ -32,7 +32,7 @@ async def new_run(request: Request, data: NewRunCfg):
             detail=ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e),
-                traceback=traceback.format_exc()
+                traceback=traceback.format_exc().splitlines()
             )
         )
 
@@ -50,6 +50,7 @@ async def get_current_status(request: Request, run_id: str):
             detail=ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e),
+                traceback=traceback.format_exc().splitlines()
             )
         )
     

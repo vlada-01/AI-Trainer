@@ -85,7 +85,7 @@ class ImageMetaData(MetaData):
     def set_sizes(self, train_ds):
         log.debug('Updating ImageMetaData sizes')
         if self.task == 'regression':
-            sample_dict = train_ds[0]
+            sample_dict, _ = train_ds[0]
             X, y = sample_dict['X'], sample_dict['y']
             self.input_size = {
                 k: list(v.size()) for k, v in X.items()
@@ -96,8 +96,9 @@ class ImageMetaData(MetaData):
         loader = DataLoader(train_ds, batch_size=512, shuffle=False, num_workers=0)
 
         seen = set()
-        for batch in loader:
-            _, y = batch
+        for samples, _ in loader:
+            y = samples['y']
+            
             if hasattr(y, "tolist"):
                 seen.update(y.tolist())
             else:
@@ -107,16 +108,16 @@ class ImageMetaData(MetaData):
 
         log.debug(f'Number of classes: {num_classes}')
         
-        sample_dict = train_ds[0]
+        sample_dict, _ = train_ds[0]
         X, y = sample_dict['X'], sample_dict['y']
         self.input_size = {
             k: list(v.size()) for k, v in X.items()
         }
-        self.output_size = list(y.size())
+        self.output_size = list(torch.Size([num_classes]))
 
     def set_task(self, task):
         self.task = task
 
-    def set_input_keys(self, sample):
+    def set_input_keys(self, sample, id):
         X_dict = sample['X']
         self.input_keys = [k for k in X_dict.keys()]

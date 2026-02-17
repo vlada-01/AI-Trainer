@@ -119,7 +119,7 @@ class TextualMetaData(MetaData):
         max_attn_mask = 0
         for i in range(len(raw_train)):
             raw_dict = raw_train[i]
-            x, _ = raw_dict['x']
+            x = raw_dict['x']
             if len(x) + 2 > self.max_len:
                 greater_then_attn_mask += 1
             if len(x) + 2 > max_attn_mask:
@@ -137,7 +137,8 @@ class TextualMetaData(MetaData):
         if new_max_len > self.max_len:
             log.info(f'Overriding current max_len={self.max_len} with new max_len={new_max_len}')
             self.max_len = new_max_len
-
+        
+        # TODO: wrong information if the max_len is overriden
         log.info(f'Max attention mask: {self.max_len}. Greater then attn_mask: {greater_then_attn_mask}, max size: {max_attn_mask}')
     
     # TODO: need to be careful what is the output.size() - 1 num, list, list[list]
@@ -145,7 +146,7 @@ class TextualMetaData(MetaData):
         log.info('Updating TextualMetaData sizes')
         
         if self.task == 'regression':
-            sample_dict = train_ds[0]
+            sample_dict, _ = train_ds[0]
             X, y = sample_dict['X'], sample_dict['y']
             self.input_size = {
                 k: list(v.size()) for k, v in X.items()
@@ -156,8 +157,8 @@ class TextualMetaData(MetaData):
         loader = DataLoader(train_ds, batch_size=512, shuffle=False, num_workers=0)
 
         seen = set()
-        for batch in loader:
-            _, y = batch
+        for samples, _ in loader:
+            y = samples['y']
             if hasattr(y, "tolist"):
                 seen.update(y.tolist())
             else:
@@ -167,7 +168,7 @@ class TextualMetaData(MetaData):
 
         log.info(f'Number of classes: {num_classes}')
         
-        sample_dict = train_ds[0]
+        sample_dict, _ = train_ds[0]
         X, y = sample_dict['X'], sample_dict['y']
         self.input_size = {
             k: list(v.size()) for k, v in X.items()
@@ -180,6 +181,6 @@ class TextualMetaData(MetaData):
     def set_max_len(self, max_len):
         self.max_len = max_len
 
-    def set_input_keys(self, sample):
+    def set_input_keys(self, sample, id):
         X_dict = sample['X']
         self.input_keys = [k for k in X_dict.keys()]
