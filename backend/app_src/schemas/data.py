@@ -78,15 +78,15 @@ class Splits(BaseModel):
     test: Optional[str] = None
 
 class Ratios(BaseModel):
-    val_size: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    test_size: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    val: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    test: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
     model_validator(mode="after")
     def check_split_sizes(self):
-        if self.val_size is not None and self.val_size > 0.5:
-            raise ValueError(f'{self.val_size} > 0.5 is not okay')
-        if self.test_size is not None and self.test_size > (1.0 - self.val_size) / 2:
-            raise ValueError(f'{self.test_size} > {(1.0 - self.val_size) / 2} cannot be greater than half of the remaining portion')
+        if self.val is not None and self.val > 0.5:
+            raise ValueError(f'{self.val} > 0.5 is not okay')
+        if self.test is not None and self.test > (1.0 - self.val) / 2:
+            raise ValueError(f'{self.test} > {(1.0 - self.val) / 2} cannot be greater than half of the remaining portion')
         return self
 
 class HuggingFaceConfig(BaseModel):
