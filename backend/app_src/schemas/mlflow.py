@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Any
+from typing import List, Any, Dict
 
 class Experiment(BaseModel):
     name: str
@@ -9,4 +9,4 @@ class HistoryResponse(BaseModel):
     exps: List[Experiment]
 
 class ResultsResponse(BaseModel):
-    artifacts: Any
+    results: Dict[str, Any]

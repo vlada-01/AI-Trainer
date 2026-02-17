@@ -15,7 +15,7 @@ router = APIRouter(prefix="/mlflow", tags=["mlflow"])
 @router.get('/history', response_model=HistoryResponse)
 def history(request: Request):
     try:
-        ctx = request.state.ctx
+        ctx = request.app.state.ctx
         client = ctx.mlflow_client
         # TODO: is client necessary
         list_of_exps = get_experiments(client)
@@ -35,10 +35,12 @@ def history(request: Request):
 # TODO: add endpoint that returns runs inside the experiment
 
 @router.get('/{mlflow_run_id}', response_model=ResultsResponse)
-async def final_evaluation(request: Request, mlflow_run_id: str):
+async def get_run_results(request: Request, mlflow_run_id: str):
     try:
-        results, _ = get_run_results(mlflow_run_id)
-        return ResultsResponse(artifacts=results)
+        ctx = request.app.state.ctx
+        client = ctx.mlflow_client
+        results = get_run_results(client, mlflow_run_id)
+        return ResultsResponse(results=results)
     except Exception as e:
         print(traceback.format_exc())
         raise  HTTPException(

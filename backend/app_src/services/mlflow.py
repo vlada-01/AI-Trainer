@@ -23,28 +23,25 @@ def get_experiments(client):
     ]
     return list_of_exps
 
-def get_run_results(run_id):
+def get_run_results(client, run_id):
     job_id = uuid4().hex
     log.info('Initializing inspect process')
 
     log.info(f'Retrieving logged artifacts for run_id: {run_id}')
     with ArtifactReader(job_id, run_id) as r:
-        val_metrics = r.load_metrics()
-        val_error_analysis = r.load_val_error_analysis()
-    
-    # TODO: watch out of types
-    result = {
-        'val_metrics': val_metrics,
-        'val_error_table': val_error_analysis['df']
-    }
-    if 'confusion_matrix' in val_error_analysis:
-        log.info('Adding confusion matrix in the result')
-        result['val_confusion_matrix'] = val_error_analysis['confusion_matrix']
-    ctx_dict = {}
-    log.info('Inspect process is successfully finished')
-    return result, ctx_dict
+        error_analysis_dict = r.load_error_analysis()
 
-# TODO: should enable user to load the cfg based on the history run
-# TODO: add atomic function for getting the configurations
+    run = client.get_run(run_id)
+    metrics = run.data.metrics
+    # TODO: watch out of types
+    results_dict = {
+        'val_metrics': metrics,
+        'val_error_table': error_analysis_dict['df']
+    }
+    if 'confusion_matrix' in error_analysis_dict:
+        log.info('Adding confusion matrix in the result')
+        results_dict['val_confusion_matrix'] = error_analysis_dict['confusion_matrix']
+    log.info('Inspect process is successfully finished')
+    return results_dict
 
 

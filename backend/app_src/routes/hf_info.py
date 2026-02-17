@@ -15,7 +15,8 @@ router = APIRouter(prefix="/data-info", tags=["hf_info"])
 def get_ds_info(request: Request, data: DatasetInfoRequest):
     try:
         log.info('Requesting dataset info')
-        ds_info_dict = get_dataset_info(data)
+        ds_info = get_dataset_info(data)
+        ds_info_dict = ds_info.__dict__
         log.info('Dataset Info succesfully found')
         return DatasetInfoResponse(
             status='success',

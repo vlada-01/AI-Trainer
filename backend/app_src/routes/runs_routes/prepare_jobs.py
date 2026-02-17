@@ -126,6 +126,7 @@ async def load_run_cfg(request: Request, run_id: str, data: requests.LoadRunCfgJ
         )
 
 # TODO update later to be able to repeatedly add more and more post processings on top of same base
+# TODO: right now, the post_process is finalized in final_evaluation, that does not include all columns in error analysis
 @router.post('/post-process', response_model=JobResponse)
 async def post_process(request: Request, run_id: str, data: requests.PreparePostProcessingJobRequest):
     try:
