@@ -25,7 +25,6 @@ def build_normalize_min_max(params):
 def build_img_to_tensor(params):
     return T.ToTensor()
 
-# TODO: consider adding raw transformation that takes first and last 128 tokens for example. Good for imdb
 def build_text_to_tensor(params):
     vocab = params['vocab']
     max_len = params['max_len']

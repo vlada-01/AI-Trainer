@@ -18,7 +18,7 @@ log = get_logger(__name__)
 async def try_create_job(ctx: RunContext, state_code: StateCode) -> JobResponse:
     if not await ctx.is_valid_to_add(state_code): 
         raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
-    job_id = uuid4().hex #TODO: add check for job_id already present
+    job_id = uuid4().hex
     job = JobResponse(
         id=job_id,
         job_type = state_code,
@@ -47,7 +47,6 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         )
     except Exception as e:
         print(traceback.format_exc())
-        # TODO: finishes job but, does not send to client that it failed, until client requests it again
         await update_job(
             ctx,
             job_id,

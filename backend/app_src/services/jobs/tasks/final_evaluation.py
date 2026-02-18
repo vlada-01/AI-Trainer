@@ -48,3 +48,5 @@ def atomic_final_eval(predictor, test, meta, train_params, dl_cfg, model_cfg, pp
     ctx_dict = {}
     log.info('Training model process is successfully finished')
     return result, ctx_dict
+
+# TODO: val_metrics, dict_error_analysis = evaluate(predictor, val_dl, train_params, collect_error_analysis=True) add this for post processing

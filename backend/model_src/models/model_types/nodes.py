@@ -67,7 +67,6 @@ class ComponentNode(Node):
 
         self.state = dict()
 
-    # TODO: check if self.state = is okay command
     def forward(self, *xs):
         self.state = dict(zip(self.in_keys, xs))
         for id in self.sorted_ids:

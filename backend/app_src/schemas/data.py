@@ -101,7 +101,7 @@ class HuggingFaceConfig(BaseModel):
         ]
     splits: Splits
     ratios: Ratios
-    load_ds_args: Dict[str, Any] #TODO: can be improved
+    load_ds_args: Dict[str, Any] #TODO: issue if user defines splits here, migth need to know to split all ds args in separate fields
     x_keys: List[str]
     y_keys: List[str]
 

@@ -14,7 +14,6 @@ log = get_logger(__name__)
 
 
 # TODO: Need to test All transformation types
-# TODO: need to add support to load meta by cfg
 def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
     train, val, test, meta =  build_data(cfg)
@@ -58,7 +57,6 @@ def atomic_prepare_train_params(predictor, meta, train_cfg):
     log.info('Prepare training parameters process is successfully finished')    
     return result, ctx_dict
 
-# TODO: maybe add pp as well
 def atomic_prepare_complete_train(cfgs):
     log.info('Initiazling prepare train with all configurations')
     ds_cfg, model_cfg, train_cfg = cfgs.dataset_cfg, cfgs.model_cfg, cfgs.train_cfg

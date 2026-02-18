@@ -29,16 +29,3 @@ def create_meta(meta_type, preconfigured_dict):
 def update_meta(meta, upd_dict, preconfigured=False):
     if not preconfigured:
         meta.update(upd_dict)
-
-# TODO: consider adding rebuilder for faster data preparation after initial training
-# def try_rebuild_meta(meta_cfg):
-#     if meta_cfg is None:
-#         return None, False
-#     meta_type = meta_cfg['modality']
-#     meta = create_meta(meta_type)
-#     for k, v in meta_cfg.items():
-#         if hasattr(meta, k):
-#             setattr(meta, k, v)
-#         else:
-#             raise ValueError(f'{meta_type} does not have field {k}')
-#     return meta, True

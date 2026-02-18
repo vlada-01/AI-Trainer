@@ -23,9 +23,6 @@ class RunContext:
         self.state_mapping = get_state_mappings(run_type)
         self.run_id: str = uuid4().hex
         self.state: StateCode = StateCode.draft
-        # self.required_steps: List[]
-        # # TODO: update this
-        # self.required_steps: List[str] = ['prepare_dataset, prepare_model, prepare_train']
         now = datetime.now(timezone.utc)
         self.created_at: str = now
         self.updated_at: str = now
@@ -71,14 +68,12 @@ class RunContext:
 
     async def update(self, result):
         async with self.run_ctx_lock:
+            if not all(hasattr(self, k) for k in result.keys):
+                raise ValueError(f'Not all fields exist in the RunContext')
             for k, v in result.items():
-                    if hasattr(self, k):
-                        setattr(self, k, v)
-                    else:
-                        # TODO: update this crap, because some fields might be updated before exception
-                        raise ValueError(f'Field {k} does not exist in the AppContext')
+                    setattr(self, k, v)
+                        
             self.updated_at = datetime.now(timezone.utc)
-            # TODO: need to implement required_steps
 
     async def move_state(self, job_id):
         async with self.run_ctx_lock:

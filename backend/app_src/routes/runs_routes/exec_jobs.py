@@ -27,7 +27,6 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await try_create_job(run, StateCode.training)
-        # TODO: need to prevent create_job if not data is loaded
         params = await run.get_train_params() + (data, job.id)
         fn = atomic_train_model
         asyncio.create_task(start_job(run, job.id, fn, params))

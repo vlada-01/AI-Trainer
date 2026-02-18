@@ -1,10 +1,10 @@
 import traceback
 from fastapi import APIRouter, Request, HTTPException
 
-from app_src.schemas.mlflow import HistoryResponse, ResultsResponse
+from app_src.schemas.mlflow import HistoryResponse, ResultsResponse, ExperimentRunsResponse
 from app_src.schemas.job_response import ErrorInfo
 
-from app_src.services.mlflow import get_experiments, get_run_results
+from app_src.services.mlflow import get_experiments, get_run_results, get_runs, delete_run
 
 from common.logger import get_logger
 
@@ -13,11 +13,10 @@ log = get_logger(__name__)
 router = APIRouter(prefix="/mlflow", tags=["mlflow"])
 
 @router.get('/history', response_model=HistoryResponse)
-def history(request: Request):
+def get_history(request: Request):
     try:
         ctx = request.app.state.ctx
         client = ctx.mlflow_client
-        # TODO: is client necessary
         list_of_exps = get_experiments(client)
         return HistoryResponse(
             exps=list_of_exps
@@ -31,11 +30,28 @@ def history(request: Request):
                 error_message=str(e)
             )
         )
-    
-# TODO: add endpoint that returns runs inside the experiment
+
+@router.get('/get-exp-runs/{exp_name}', response_model=ExperimentRunsResponse)
+def get_exp_runs(request: Request, exp_name: str):
+    try:
+        ctx = request.app.state.ctx
+        client = ctx.mlflow_client
+        runs_list = get_runs(client, exp_name)
+        return ExperimentRunsResponse(
+            runs=runs_list
+        )
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
 
 @router.get('/{mlflow_run_id}', response_model=ResultsResponse)
-async def get_run_results(request: Request, mlflow_run_id: str):
+def get_run_results(request: Request, mlflow_run_id: str):
     try:
         ctx = request.app.state.ctx
         client = ctx.mlflow_client
@@ -50,6 +66,20 @@ async def get_run_results(request: Request, mlflow_run_id: str):
                 error_message=str(e)
             )
         )
-    
-# TODO: add endpoints later to separately load metrics, cfg, error analysis
-# TODO: add endpoint for deleting run from mlflow 
+
+@router.delete('/{mlflow_run_id}', status_code=204)
+def delete_mlflow_run(request: Request, mlflow_run_id: str):
+    try:
+        ctx = request.app.state.ctx
+        client = ctx.mlflow_client
+        delete_run(client, mlflow_run_id)
+        return None
+    except Exception as e:
+        print(traceback.format_exc())
+        raise  HTTPException(
+            status_code=500,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )

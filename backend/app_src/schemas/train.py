@@ -45,23 +45,23 @@ class Calibration(BaseModel):
     T: Optional[float] = None
 
 
-class FtDatasetCfg(BaseModel):
-    new_train_transform: Optional[List[TransformStep]] = None
+# class FtDatasetCfg(BaseModel):
+#     new_train_transform: Optional[List[TransformStep]] = None
 
-# TODO: update this according to DAG
-class FTLayersDetails(BaseModel):
-    type: Union[Literal['backbone', 'new']]
-    freeze: bool = False
-    original_id: Optional[int] = None
+# # TODO: update this according to DAG
+# class FTLayersDetails(BaseModel):
+#     type: Union[Literal['backbone', 'new']]
+#     freeze: bool = False
+#     original_id: Optional[int] = None
     
-class FtLayersCfg(BaseModel):
-    use_torch_layers: Optional[bool] = False
-    layers: Layers
-    ft_layers_details: List[FTLayersDetails]
+# class FtLayersCfg(BaseModel):
+#     use_torch_layers: Optional[bool] = False
+#     layers: Layers
+#     ft_layers_details: List[FTLayersDetails]
 
-class FtTrainCfg(BaseModel):
-    epochs: int
-    num_of_iters: int = 1
-    optimizer: OptimizerConfig
-    lr_decay: Optional[LrDecay] = None
-    loss_fn: LossFnConfig
+# class FtTrainCfg(BaseModel):
+#     epochs: int
+#     num_of_iters: int = 1
+#     optimizer: OptimizerConfig
+#     lr_decay: Optional[LrDecay] = None
+#     loss_fn: LossFnConfig

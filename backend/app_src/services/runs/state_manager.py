@@ -6,7 +6,7 @@ class AvailableRunTypes(Enum):
     post_process = 'post_process'
     final_evaluation = 'final_evaluation'
 
-# TODO: need to update this crap, final_eval, pp, and fine tune
+# TODO: need to refactor this in some more elegant module
 
 class StateCode(Enum):
     draft = 0
@@ -33,7 +33,6 @@ def get_base_run_states():
     }
     return BASE_RUN_STATES
 
-# TODO: these two should first load from run and then update
 def get_fine_tune_states():
     FINE_TUNE_RUN_STATES = {
         StateCode.draft: {StateCode.prepare_default_run},

@@ -7,7 +7,6 @@ from pathlib import Path
 
 from common.logger import get_logger
 
-# TODO: add logs later
 log = get_logger(__name__)
 
 PATHS_MAP = {
@@ -32,7 +31,7 @@ class ArtifactWriter:
         shutil.rmtree(self.root, ignore_errors=True)
         return False
     
-    # TODO: need to be careful to not introduce two files with same name, breaks ArtifactReader logic
+    # need to be careful to not introduce two files with same name, breaks ArtifactReader logic
     @staticmethod
     def write_text(p: Path, json_cfg):
         p.parent.mkdir(parents=True, exist_ok=True)

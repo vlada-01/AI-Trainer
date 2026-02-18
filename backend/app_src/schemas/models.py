@@ -57,7 +57,6 @@ class TransformerEncoder(BaseModel):
     ffn_size: int
     dropout: float
 
-# TODO: update usages in other places, fine-tune changed from List[Union] to Union
 Layers = Annotated[
     Union[
         BatchNorm2dLayer,

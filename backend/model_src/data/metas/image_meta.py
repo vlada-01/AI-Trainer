@@ -14,7 +14,6 @@ class ImageMetaData(MetaData):
         self.output_size = None
         self.input_keys = None
 
-    # TODO: update me if needed
     def preprocess_raw(self, ds):
         return ds
 
