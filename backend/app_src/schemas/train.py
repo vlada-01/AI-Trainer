@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal, Union, Optional, List, Dict, Any
 
 from model_src.prepare_train.metrics import AvailableMetrics
@@ -17,9 +17,15 @@ class OptimizerConfig(BaseModel):
     type: str
     args: Dict[str, Any]
 
-class LossFnConfig(BaseModel):
+class LossFn(BaseModel):
     type: str
     args: Dict[str, Any]
+
+class LossFnCfg(BaseModel):
+    out_key: str
+    weight: float = Field(..., le=1.0, ge=0.0)
+    fn: LossFn
+    
 
 Metrics = List[Union[
         Literal[AvailableMetrics.accuracy],
@@ -33,6 +39,10 @@ Metrics = List[Union[
         # Literal[AvailableMetrics.bleu],
         # Literal[AvailableMetrics.perplexity],
     ]]
+
+class MetricCfg(BaseModel):
+    out_key: str
+    metrics: Metrics
 
 # thresholds in [0..1]
 class GlobalThreshold(BaseModel):

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Literal, Union, Optional, Dict, Any, List
+from typing import Literal, Union, Optional, Dict, Any, List, Tuple
 
 from model_src.data.metas.meta import  MetaTypes
 from model_src.data.dataset_builders.builder import AvailableProviders
@@ -93,9 +93,8 @@ class HuggingFaceConfig(BaseModel):
     dataset_provider: Literal[AvailableProviders.hf] = AvailableProviders.hf
     id: str
     name: Optional[str] = None
-    task: Union[Literal['classification', 'regression']]
     meta_type: Union[
-        Literal[MetaTypes.tabular], #TODO: need to add this support
+        # Literal[MetaTypes.tabular], #TODO: need to add this support
         Literal[MetaTypes.image],
         Literal[MetaTypes.textual]
         ]
@@ -104,4 +103,5 @@ class HuggingFaceConfig(BaseModel):
     load_ds_args: Dict[str, Any] #TODO: issue if user defines splits here, migth need to know to split all ds args in separate fields
     x_keys: List[str]
     y_keys: List[str]
+    tasks: List[Tuple[str, str]]
 

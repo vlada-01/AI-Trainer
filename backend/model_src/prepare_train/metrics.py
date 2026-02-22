@@ -5,6 +5,10 @@ from abc import ABC, abstractmethod
 
 from model_src.models.post_processor import UNKNOWN_CLASS
 
+from common.logger import get_logger
+
+log = get_logger(__name__)
+
 # TODO: there should be a support for coverage
 # TODO: implement avg, weighted ... for show_metrics
 
@@ -26,29 +30,46 @@ class AvailableMetrics(str, Enum):
     # TODO: maybe add total exec time
 
 def prepare_metrics(cfg_metrics, meta):
-    metrics = []
+    metrics_dict = {}
+    
+    log.info('Preparing metrics dict')
     module = sys.modules[__name__]
-    for metric in cfg_metrics:
-        metric_cls = getattr(module, metric, None)
+    for metric_cfg in cfg_metrics:
+        out_key = metric_cfg.out_key
+        metrics = metric_cfg.metrics
+        log.info(f'Assembling metrics for the out_key: {out_key}')
+        assembled_metrics = []
+        for metric in metrics:
+            metric_cls = getattr(module, metric, None)
 
-        if metric_cls is None:
-            raise ValueError(f'{module} does not support metric {metric}')
+            if metric_cls is None:
+                raise ValueError(f'{module} does not support metric {metric.value}')
 
-        metrics.append(metric_cls(meta))
-    return metrics
+            log.debug(f'Adding {metric.value} in the assembled metrics')
+            uniques = meta.get_output_unique_values(out_key)
+            assembled_metrics.append(metric_cls(uniques))
+        metrics_dict[out_key] = assembled_metrics
+    return metrics_dict
 
-def reset_metrics(metrics):
-    for metric in metrics:
-        metric.reset()
+def reset_metrics(metrics_dict):
+    for assembled_metrics in metrics_dict.values():
+        for metric in assembled_metrics:
+            metric.reset()
 
 def update_metrics(metrics, preds, targets):
-    for metric in metrics:
-        metric.update(preds, targets)
+    for k, assembled_metrics in metrics.items():
+        curr_preds = preds[k]
+        curr_targets = targets[k]
+        for metric in assembled_metrics:
+            metric.update(curr_preds, curr_targets)
 
 def show_results(metrics):
-    results = []
-    for metric in metrics:
-        results.append(metric.show())
+    results = {}
+    for k, assembled_metrics in metrics.items():
+        tmp = []
+        for metric in assembled_metrics:
+            tmp.append(metric.show())
+        results[k] = tmp
     return results
 
 #-----------------------------------------------------------------
@@ -68,7 +89,7 @@ class Metric(ABC):
         pass
 
 class Accuracy(Metric):
-    def __init__(self, meta):
+    def __init__(self, uniques):
         self.name = AvailableMetrics.accuracy
         self.scored = None
         self.ds_size = None
@@ -90,9 +111,9 @@ class Accuracy(Metric):
     
 
 class Precision(Metric):
-    def __init__(self, meta):
+    def __init__(self, uniques):
         self.name = AvailableMetrics.precision
-        self.N = meta.get_unique_targets()
+        self.N =  uniques
         self.method = 'avg' #TODO: add weighted, macro i micro
         
         self.tps = None
@@ -119,9 +140,9 @@ class Precision(Metric):
         return self.name, 1 / self.N * torch.sum(precisions)
         
 class  Recall(Metric):
-    def __init__(self, meta):
+    def __init__(self, uniques):
         self.name = AvailableMetrics.recall
-        self.N = meta.get_unique_targets()
+        self.N = uniques
 
         self.tps = None
         self.fns = None
@@ -148,9 +169,9 @@ class  Recall(Metric):
 
 
 class F1Score(Metric):
-    def __init__(self, meta):
+    def __init__(self, uniques):
         self.name = AvailableMetrics.f1_score
-        self.N = meta.get_unique_targets()
+        self.N = uniques
 
         self.tps = None
         self.fps = None

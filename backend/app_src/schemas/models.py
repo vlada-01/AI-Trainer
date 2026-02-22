@@ -123,5 +123,4 @@ NodeCfg = Annotated[
 class DAGCfg(BaseModel):
     node_ids: List[str]
     edges: List[Tuple[str, str]]
-    # TODO: extend latar so model can return more then one value
-    out_key: str
+    out_keys: List[str]

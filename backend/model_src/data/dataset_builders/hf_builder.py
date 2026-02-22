@@ -1,5 +1,5 @@
 import os
-from datasets import load_dataset, DatasetDict
+from datasets import load_dataset, DatasetDict, Features
 
 from torch.utils.data import Dataset
 from pprint import pformat
@@ -51,9 +51,11 @@ class HuggingFaceBuilder():
         
         if preconfigured_meta is None:
             upd_dict = {
-                'set_task': cfg.task,
+                'set_tasks': cfg.tasks,
                 'set_input_keys': self.train_ds[0],
-                'set_sizes': self.train_ds,
+                'set_input_sizes': self.train_ds[0],
+                'set_output_sizes': self.train_ds[0],
+                'set_output_unique_values': self.train_ds,
             }
             log.debug('Updating meta with dict:\n%s', pformat({k: type(v).__name__ for k, v in upd_dict.items()}))
             update_meta(self.meta, upd_dict)
@@ -79,24 +81,63 @@ class HuggingFaceBuilder():
         }
         return load_dataset(**kwargs)
     
-    def preprocess_data(self, raw):
-        def normalize_inputs(batch):
+    def preprocess_data(self, raw): 
+        def get_by_path(batch, key):
+            cur = batch
+            for k in key.split("."):
+                if isinstance(cur, list):
+                    cur = [item[k] for item in cur]
+                else:
+                    cur = cur[k]
+            # try:
+            #     print('return: ', cur, len(cur))
+            # except:
+            #     print('return: ', cur)
+            return cur
+
+        def build_xy_features(raw_features):
             x_keys = self.cfg.x_keys
             y_keys = self.cfg.y_keys
 
-            # return {
-            #     'x': {k: batch[k] for k in x_keys},
-            #     'y': {k: batch[k] for k in y_keys},
-            # }
-            # TODO: need to extend functionality to be able to preprocess x dict
-            return {
-                'x': batch[x_keys[0]],
-                'y': batch[y_keys[0]]
+            x = {k.split('.')[-1]: get_by_path(raw_features, k) for k in x_keys}
+            y = {k.split('.')[-1]: get_by_path(raw_features, k) for k in y_keys}
+            return Features({'x': x, 'y': y})
+        
+        def normalize_inputs(batch):
+            x_keys = self.cfg.x_keys
+            y_keys = self.cfg.y_keys
+            xs_dict = {k.split('.')[-1]: get_by_path(batch, k) for k in x_keys}
+            # xs_dict = {'image': batch['image']}
+            ys_dict = {k.split('.')[-1]: get_by_path(batch, k) for k in y_keys}
+            
+            def columns_to_rows(cols: dict):
+                keys = list(cols.keys())
+                n = len(next(iter(cols.values())))
+                return [
+                    {k: cols[k][i] for k in keys}
+                    for i in range(n)
+                ]
+            
+            final = {
+                'y': columns_to_rows(ys_dict),
+                'x': columns_to_rows(xs_dict),
+                # 'x': columns_to_rows(xs_dict)
+                # 'x': {'image': batch['image'], 'image_id': batch['image_id'], 'width': batch['width'], 'height': batch['height']}
             }
+            # print(final['x'][0])
+            return final
 
         log.info('Normalizing raw data to (x, y)')
+        split_keys = list(raw.keys())
+        raw_features = raw[split_keys[0]].features
+        xy_features = build_xy_features(raw_features)
+        # print(xy_features)
+        # print(raw['train']['image'][0])
         ds = raw.map(normalize_inputs, batched=True, num_proc=4)
         ds = ds.select_columns(['x', 'y'])
+        ds = ds.cast(xy_features)
+        # print(ds['train']['x'][0])
+        log.info('Mapp done')
 
         ds = self.meta.preprocess_raw(ds)
 
@@ -136,14 +177,24 @@ class HfDataset(Dataset):
         raw_dict = self.ds[i]
         X, target = raw_dict['x'], raw_dict['y']
         if self.transform is not None:
-            X = self.transform(X)
-        
+            tmp = {}
+            for k, v in X.items():
+                v_tfd = self.transform(v)
+                if isinstance(v_tfd, dict):
+                    tmp = {**tmp, **v_tfd}
+                else:
+                    tmp[k] = v_tfd
+            X = tmp
         if self.target_transform is not None:
-            target = self.target_transform(target)
-        if isinstance(X, dict):
-            return {'X': X, 'y': target}, i
+            tmp = {}
+            for k, v in target.items():
+                v_tfd = self.target_transform(v)
+                if isinstance(v_tfd, dict):
+                    tmp = {**tmp, **v_tfd}
+                else:
+                    tmp[k] = v_tfd
+            target = tmp  
+        return {'X': X, 'y': target}, i
         
-        return {'X': {'X':X}, 'y': target}, i
-    
     def __len__(self):
         return len(self.ds)

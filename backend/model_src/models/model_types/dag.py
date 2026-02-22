@@ -51,7 +51,7 @@ class DAGNet(nn.Module):
     def __init__(self, dag_cfg, nodes):
         super().__init__()
 
-        self.out_key = dag_cfg.out_key
+        self.out_keys = dag_cfg.out_keys
 
         self.nodes = nn.ModuleDict({k: v for k, v in nodes.items()})
         
@@ -80,7 +80,9 @@ class DAGNet(nn.Module):
             if len(out) != len(out_keys):
                 raise ValueError(f'Out keys length({len(out_keys)}) and outputs len({len(out)}) does not match for id: {id}')
             self.state.update(dict(zip(out_keys, out)))
-        return self.state[self.out_key]
+
+        out = {k: self.state[k] for k in self.out_keys}
+        return out
 
     def check_graph(self, graph):
         if not graph.is_directed():

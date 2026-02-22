@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.optim as opt
 import inspect
 from dataclasses import dataclass
-from typing import Sequence, Union
+from typing import Dict, Union, Sequence
 from pprint import pformat
 
 from typing import Any
 
 from model_src.prepare_train.metrics import prepare_metrics, Metric
+from model_src.prepare_train.loss import prepare_loss_functions, Loss
 from model_src.prepare_train.error_analysis import prepare_error_analysis, ClassificationErrorAnalysis, RegressionErrorAnalysis
 
 from common.logger import get_logger
@@ -23,8 +24,9 @@ class TrainParams:
     num_of_iters: int
     optimizer: opt.Optimizer
     scheduler: opt.lr_scheduler.LRScheduler
-    loss_fn: nn.modules.loss._Loss
-    metrics: Sequence[Metric]
+    # TODO: update this crap
+    loss_fns: Loss
+    metrics: Dict[str, Sequence[Metric]]
     error_analysis: Union[ClassificationErrorAnalysis, RegressionErrorAnalysis]
 
 def prepare_train_params(model_params, meta, train_cfg):
@@ -34,7 +36,7 @@ def prepare_train_params(model_params, meta, train_cfg):
     num_of_iters = train_cfg.num_of_iters
     optimizer = prepare(opt, train_cfg.optimizer, model_params)
     scheduler = prepare(opt.lr_scheduler, train_cfg.lr_decay, optimizer) if train_cfg.lr_decay is not None else None
-    loss_fn = prepare(nn, train_cfg.loss_fn)
+    loss_fns = prepare_loss_functions(train_cfg.loss_fns)
     metrics = prepare_metrics(train_cfg.metrics, meta)
     error_analysis = prepare_error_analysis(meta)
 
@@ -46,7 +48,7 @@ def prepare_train_params(model_params, meta, train_cfg):
         num_of_iters=num_of_iters,
         optimizer=optimizer,
         scheduler=scheduler,
-        loss_fn=loss_fn,
+        loss_fns=loss_fns,
         metrics=metrics,
         error_analysis=error_analysis
     )

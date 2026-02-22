@@ -2,32 +2,35 @@ import torch
 
 from model_src.prepare_train.metrics import reset_metrics, update_metrics, show_results
 
+from model_src.prepare_train.error_analysis import update_error_analysis, test_update_error_analysis, get_results
+
 from common.logger import get_logger
 
 log = get_logger(__name__)
 
 def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
     size = len(dataloader.dataset)
-    batch_size = dataloader.batch_size
 
     device = train_params.device
-    loss_fn = train_params.loss_fn
+    loss_fns = train_params.loss_fns
     metrics = train_params.metrics
+    error_analysis = train_params.error_analysis
 
     loss = 0
     reset_metrics(metrics)
+    
     predictor.get_model().to(device)
     predictor.get_model().eval()
     with torch.no_grad():
         for i, (batch, indices) in enumerate(dataloader):
             X, y = batch['X'], batch['y']
             X = {k: v.to(device) for k, v in X.items()}
-            y = y.to(device)
+            y = {k: v.to(device) for k, v in y.items()}
             logits = predictor.logits(X)
-            loss += loss_fn(logits, y).item()
+            loss += loss_fns.calculate_total_loss(logits, y).item()
             
             if collect_error_analysis:
-                train_params.error_analysis.update(indices, logits, predictor, y)
+                error_analysis = update_error_analysis(error_analysis, indices, logits, predictor, y)
             
             preds = predictor.preds(logits)
             update_metrics(metrics, preds, y)
@@ -37,9 +40,10 @@ def evaluate(predictor, dataloader, train_params, collect_error_analysis=False):
                 log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
     metric_results = show_results(metrics)
-    metric_results.append(('loss', loss))
+    #TODO: maybe add losses per head
+    # metric_results['loss'] = loss
     if collect_error_analysis:
-        dict_error_analysis = train_params.error_analysis.get_results()
+        dict_error_analysis = get_results(error_analysis)
         return metric_results, dict_error_analysis
     return metric_results, None
 
@@ -51,12 +55,12 @@ def predict(predictor, test_dl, device, metrics, error_analysis):
         for batch, indices in test_dl:
             X, y = batch['X'], batch['y']
             X = {k: v.to(device) for k, v in X.items()}
-            y = y.to(device)
+            y = {k: v.to(device) for k, v in y.items()}
             logits = predictor.logits(X)
             preds = predictor.preds(logits)
             update_metrics(metrics, preds, y)
-            error_analysis.test_update(indices, preds, y)
+            error_analysis = test_update_error_analysis(error_analysis, indices, preds, y)
             
     metric_results = show_results(metrics)
-    dict_error_analysis = error_analysis.get_results()
+    dict_error_analysis = get_results(error_analysis)
     return metric_results, dict_error_analysis

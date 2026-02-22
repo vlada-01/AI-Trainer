@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 class MetaTypes(str, Enum):
-    tabular = 'tabular'
+    # tabular = 'tabular'
     image = 'image'
     textual = 'textual'
 
@@ -31,11 +31,11 @@ class MetaData(ABC):
         pass
 
     @abstractmethod
-    def get_task(self):
+    def get_tasks(self):
         pass
 
     @abstractmethod
-    def get_unique_targets(self):
+    def get_output_unique_values(self, key):
         pass
 
     @abstractmethod

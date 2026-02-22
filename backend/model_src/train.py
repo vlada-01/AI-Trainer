@@ -38,16 +38,16 @@ def train(predictor, dl, train_params):
     predictor.get_model().train()
     device = train_params.device
     num_of_iters = train_params.num_of_iters
-    loss_fn = train_params.loss_fn
+    loss_fns = train_params.loss_fns
     opt = train_params.optimizer
     
     for i, (batch, indices) in enumerate(dl):
         X, y = batch['X'], batch['y']
         X = {k: v.to(device) for k, v in X.items()}
-        y = y.to(device)
+        y = {k: v.to(device) for k, v in y.items()}
         for _ in range(num_of_iters):
             logits = predictor.logits(X)
-            loss = loss_fn(logits, y)
+            loss = loss_fns.calculate_total_loss(logits, y)
 
             loss.backward()
             opt.step()
@@ -63,6 +63,7 @@ def log_train_params(train_cfg):
     mlflow.log_params(train_cfg.model_dump())
 
 def log_metrics(predictor, dl, train_params, prefix, step=None):
-    metrics, _ = evaluate(predictor, dl, train_params)
-    mlflow.log_metrics({f'{prefix}_{name.lower()}': metric_val for name, metric_val in metrics}, step=step)
+    results, _ = evaluate(predictor, dl, train_params)
+    for k, metrics in results.items():
+        mlflow.log_metrics({f'{prefix}_{k}_{name.lower()}': metric_val for name, metric_val in metrics}, step=step)
 

@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 from model_src.data.metas.meta import MetaData, MetaTypes
 import torch
+from pprint import pformat
 
 from common.logger import get_logger
 
@@ -9,9 +10,10 @@ log = get_logger(__name__)
 class ImageMetaData(MetaData):
     def __init__(self):
         super().__init__(MetaTypes.image)
-        self.task = None
-        self.input_size = None
-        self.output_size = None
+        self.tasks = None
+        self.input_sizes = None
+        self.output_sizes = None
+        self.output_unique_values = None
         self.input_keys = None
 
     def preprocess_raw(self, ds):
@@ -25,7 +27,7 @@ class ImageMetaData(MetaData):
                     fn = getattr(self, k)
                     if isinstance(v, dict):
                         fn(**v)
-                    elif isinstance(v, (list, tuple)):
+                    elif isinstance(v, tuple):
                         fn(*v)
                     else:
                         fn(v)
@@ -42,26 +44,28 @@ class ImageMetaData(MetaData):
     
     def get_input_keys(self):
         return self.input_keys
+    
+    def get_output_unique_values(self, key):
+        return self.output_unique_values[key]
 
     def get_necessary_sizes(self):
         return {
-            'input_size': self.input_size,
-            'output_size': self.output_size
+            'input_sizes': self.input_sizes,
+            'output_sizes': self.output_sizes,
+            'output_unique_values': self.output_unique_values,
         }
     
-    def get_task(self):
-        return self.task
-    
-    def get_unique_targets(self):
-        return int(self.output_size[0])
+    def get_tasks(self):
+        return self.tasks
     
     def to_dict(self):
         return {
             'modality': self.modality,
-            'input_size': self.input_size,
-            'output_size': self.output_size,
+            'input_sizes': self.input_sizes,
+            'output_sizes': self.output_sizes,
+            'output_unique_values': self.output_unique_values,
             'input_keys': self.input_keys,
-            'task': self.task,
+            'tasks': self.tasks,
         }
     
     # ---------------------- Resolvers ----------------------
@@ -74,42 +78,38 @@ class ImageMetaData(MetaData):
     
     # ---------------------- Internal -----------------------
     
-    # TODO: need to be careful what is the output.size() - 1 num, list, list[list]
-    def set_sizes(self, train_ds):
-        log.debug('Updating ImageMetaData sizes')
-        if self.task == 'regression':
-            sample_dict, _ = train_ds[0]
-            X, y = sample_dict['X'], sample_dict['y']
-            self.input_size = {
-                k: list(v.size()) for k, v in X.items()
-            }
-            self.output_size = list(y.size())
-            return
+    def set_input_sizes(self, sample, id):
+        X = sample['X']
+        self.input_sizes = {k: list(v.size()) for k, v in X.items()}
+    
+    def set_output_sizes(self, sample, id):
+        y = sample['y']
+        self.output_sizes = {k: list(v.size()) for k, v in y.items()}
+    
+    # TODO: update me according to new y: dict
+    def set_output_unique_values(self, train_ds):
+        log.info('Updating ImageMetaData sizes')
 
-        loader = DataLoader(train_ds, batch_size=512, shuffle=False, num_workers=0)
-
-        seen = set()
+        loader = DataLoader(train_ds, batch_size=256, shuffle=False, num_workers=0)
+        sample_dict, _ = train_ds[0]
+        y_keys = sample_dict['y'].keys()
+        seen = {k: set() for k in y_keys}
         for samples, _ in loader:
             y = samples['y']
-            
-            if hasattr(y, "tolist"):
-                seen.update(y.tolist())
-            else:
-                seen.update(list(y))
-
-        num_classes = len(seen)
-
-        log.debug(f'Number of classes: {num_classes}')
+            _ = [set.update(vals.tolist()) for set in seen.values() for vals in y.values()]
+            # for k, v in y.items():
+            #     if hasattr(v, "tolist"):
+            #         seen
+            #         seen.update(y.tolist())
+            #     else:
+            #         seen.update(list(y))
+        seen = {k: len(v) for k, v in seen.items()}
+        log.info(f'Number of uniqe values:\n%s', pformat({k: v for k, v in seen.items()}))
         
-        sample_dict, _ = train_ds[0]
-        X, y = sample_dict['X'], sample_dict['y']
-        self.input_size = {
-            k: list(v.size()) for k, v in X.items()
-        }
-        self.output_size = list(torch.Size([num_classes]))
+        self.output_unique_values = seen
 
-    def set_task(self, task):
-        self.task = task
+    def set_tasks(self, tasks):
+        self.tasks = tasks
 
     def set_input_keys(self, sample, id):
         X_dict = sample['X']

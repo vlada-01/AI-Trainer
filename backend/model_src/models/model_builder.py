@@ -18,7 +18,8 @@ def build_predictor(model_cfg, pp_cfg=None):
     else:
         log.info('Skipping post processor builder')
         pp = None
-    predictor = Predictor(model, pp)
+    out_tasks = model_cfg.out_tasks
+    predictor = Predictor(model, out_tasks, pp)
     log.info('Predictor prepared successully')
     return predictor
 
@@ -65,8 +66,9 @@ def update_model_cfg(old_cfg, new_layers_cfg):
 # TODO: needs to be updated to have support for the regression
 # TODO: check if pp needs torch no grad
 class Predictor:
-    def __init__(self, model, pp=None):
+    def __init__(self, model, out_tasks, pp=None):
         self.model = model
+        self.out_tasks = out_tasks
         self.pp = pp
 
     def set_model(self, model):
@@ -88,14 +90,21 @@ class Predictor:
         return self.model(x)
     
     def preds(self, logits):
+        # TODO: need to update this change later
         if self.pp is not None:
             return self.pp.post_process(logits)
-        # can directly return argmax(dim=1)
-        probs = torch.softmax(logits, dim=1)
-        return probs.argmax(dim=1)
+        for out_key, task in self.out_tasks:
+            if task == 'classification':
+                logits[out_key] = torch.argmax(logits[out_key], dim=1)
+            elif task == 'regression':
+                pass
+            else:
+                raise ValueError(f'Unknown task: "{task}" when calculating predictions')
+        return logits
     
     # always converts tensors to numpy arrays, because df is pandas series
     def preds_with_error_analysis(self, logits, df):
+        # TODO: update pp case later
         if self.pp is not None:
             new_df, finals = self.pp.post_process(logits, df)
             return new_df, finals

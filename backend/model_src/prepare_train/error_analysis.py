@@ -25,37 +25,55 @@ class AvailableClassificationColumns(str, Enum):
     y_true_prob = 'y_true_prob'
 
 def prepare_error_analysis(meta):
-    if meta.get_task() == 'classification':
-        num_classes = meta.get_unique_targets()
-        return ClassificationErrorAnalysis(num_classes)
-    return RegressionErrorAnalysis()
+    error_analysis = {}
+    for out_key, task in meta.get_tasks():
+        if task == 'classification': 
+            error_analysis[out_key] = ClassificationErrorAnalysis(meta.get_output_unique_values(out_key))
+        elif task == 'regression':
+            error_analysis[out_key] = RegressionErrorAnalysis()
+        else:
+            raise ValueError(f'Invalid task: {task}')
+    
+    return error_analysis
+
+def update_error_analysis(error_analysis, ids, logits, predictor, targets):
+    for k, v in error_analysis.items():
+        curr_logits = logits[k]
+        curr_targets = targets[k]
+        v.update(ids, curr_logits, predictor, curr_targets)
+    return error_analysis
+
+def test_update_error_analysis(error_analysis, ids, preds, targets):
+    for k, v in error_analysis.items():
+        curr_preds = preds[k]
+        curr_targets = targets[k]
+        v.test_update(ids, curr_preds, curr_targets)
+    return error_analysis
+
+def get_results(error_analysis):
+    results = {}
+    for k, v in error_analysis.items():
+        results[k] = v.get_results()
+    return results
 
 class RegressionErrorAnalysis:
     def __init__(self):
-        self.df = pd.DataFrame(columns=[
-            AvailableRegressionColumns.id.value,
-            AvailableRegressionColumns.y_true.value,
-            AvailableRegressionColumns.y_pred.value,
-            AvailableRegressionColumns.error.value,
-            AvailableRegressionColumns.abs_error.value,
-            AvailableRegressionColumns.relative_error.value
-        ])
+        self.df = pd.DataFrame()
 
-    def update(self, ids, preds, targets):
+    # TODO: need to add post processing for regression to use pp-ed logits
+    def update(self, ids, logits, predictor, targets):
 
-        error = preds - targets
+        error = (logits - targets).mean(1)
         abs_error = torch.abs(error)
         squared_error = torch.square(error)
-        relative_error = error / (torch.abs(targets) + 1e-8)
 
         new_df = pd.DataFrame({
             AvailableRegressionColumns.id.value: ids.detach().cpu().numpy(),
             AvailableRegressionColumns.y_true.value: targets.detach().cpu().numpy(),
-            AvailableRegressionColumns.y_pred.value: preds.detach().cpu().numpy(),
+            AvailableRegressionColumns.y_pred.value: logits.detach().cpu().numpy(),
             AvailableRegressionColumns.error.value: error.detach().cpu().numpy(),
             AvailableRegressionColumns.abs_error.value: abs_error.detach().cpu().numpy(),
             AvailableRegressionColumns.squared_error.value: squared_error.detach().cpu().numpy(),
-            AvailableRegressionColumns.relative_error.value: relative_error.detach().cpu().numpy()
         })
         if len(self.df) == 0:
             self.df = new_df.copy()
@@ -63,8 +81,27 @@ class RegressionErrorAnalysis:
             self.df = pd.concat([self.df, new_df], ignore_index=True)
 
     # TODO: needs to be implemented
-    def test_update(self, ids, pp_preds, targets):
-        pass
+    def test_update(self, ids, preds, targets):
+        ids = ids.detach().cpu().numpy()
+        preds = preds.detach().cpu().numpy()
+        targets = targets.detach().cpu().numpy()
+
+        error = (preds - targets).mean(1)
+        abs_error = torch.abs(error)
+        squared_error = torch.square(error)
+        new_df = pd.DataFrame({
+            AvailableClassificationColumns.id.value: ids,
+            AvailableClassificationColumns.y_true.value: targets,
+            AvailableClassificationColumns.y_pred.value: preds,
+            AvailableRegressionColumns.error.value: error,
+            AvailableRegressionColumns.abs_error.value: abs_error,
+            AvailableRegressionColumns.squared_error.value: squared_error
+        })
+
+        if len(self.df) == 0:
+            self.df = new_df.copy()
+        else:
+            self.df = pd.concat([self.df, new_df], ignore_index=True)
 
     def get_results(self):
         return {'df': self.df.to_dict(orient="records")}
@@ -93,8 +130,8 @@ class ClassificationErrorAnalysis:
             AvailableClassificationColumns.y_true_prob.value: y_true_prob.detach().cpu().numpy()
         })
 
-        new_df, final = predictor.preds_with_error_analysis(logits, new_df)
-        np.add.at(self.confusion_matrix, (targets.detach().cpu().numpy(), final.detach().cpu().numpy()), 1)
+        # new_df, final = predictor.preds_with_error_analysis(logits, new_df) Not implemented with pp
+        np.add.at(self.confusion_matrix, (targets.detach().cpu().numpy(), raw_preds.detach().cpu().numpy()), 1)
         
         if len(self.df) == 0:
             self.df = new_df.copy()

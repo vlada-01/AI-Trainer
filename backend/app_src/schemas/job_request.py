@@ -1,10 +1,10 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List, Union, Dict, Any
+from typing import Optional, List, Union, Dict, Any, Literal, Tuple
 
 from app_src.schemas.data import HuggingFaceConfig, DataTransforms
 from app_src.schemas.models import DAGCfg, NodeCfg
-from app_src.schemas.train import OptimizerConfig, LrDecay, LossFnConfig, Metrics
-from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
+from app_src.schemas.train import OptimizerConfig, LrDecay, LossFnCfg, MetricCfg
+# from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
 from app_src.schemas.train import Calibration, GlobalThreshold
 
 class PrepareDatasetJobRequest(BaseModel):
@@ -17,6 +17,7 @@ class PrepareDatasetJobRequest(BaseModel):
 class PrepareModelJobRequest(BaseModel):
     nodes: List[NodeCfg]
     dag: DAGCfg
+    out_tasks: List[Tuple[str, Literal['classification', 'regression']]]
 
     @model_validator(mode='after')
     def validate_graph(self):
@@ -46,9 +47,9 @@ class PrepareTrainJobRequest(BaseModel):
 
     optimizer: OptimizerConfig
     lr_decay: Optional[LrDecay] = None
-    loss_fn: LossFnConfig
+    loss_fns: List[LossFnCfg]
     
-    metrics: Metrics
+    metrics: List[MetricCfg]
 
 class PrepareCompleteTrainJobRequest(BaseModel):
     dataset_cfg: PrepareDatasetJobRequest
@@ -73,11 +74,11 @@ class PreparePostProcessingJobRequest(BaseModel):
         GlobalThreshold
     ]]
 
-class FineTuneJobRequest(BaseModel):
-    new_run_name: str
-    new_ds_cfg: FtDatasetCfg
-    new_layers_cfg: FtLayersCfg
-    new_train_cfg: FtTrainCfg
+# class FineTuneJobRequest(BaseModel):
+#     new_run_name: str
+#     new_ds_cfg: FtDatasetCfg
+#     new_layers_cfg: FtLayersCfg
+#     new_train_cfg: FtTrainCfg
 
 class FinalEvalJobRequest(BaseModel):
     exp_name: str

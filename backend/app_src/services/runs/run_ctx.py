@@ -68,7 +68,7 @@ class RunContext:
 
     async def update(self, result):
         async with self.run_ctx_lock:
-            if not all(hasattr(self, k) for k in result.keys):
+            if not all(hasattr(self, k) for k in result.keys()):
                 raise ValueError(f'Not all fields exist in the RunContext')
             for k, v in result.items():
                     setattr(self, k, v)

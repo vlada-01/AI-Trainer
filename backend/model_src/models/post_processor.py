@@ -7,6 +7,8 @@ from common.logger import get_logger
 
 log = get_logger(__name__)
 
+# TODO: needs refactoring because x,y are dicts now
+
 UNKNOWN_CLASS = -1
 
 class AvailablePostProcessors(str, Enum):
@@ -101,10 +103,11 @@ class Calibration():
             for batch, _ in dl:
                 X, y = batch['X'], batch['y']
                 X = {k: v.to(device) for k, v in X.items()}
-                y = y.to(device)
+                y = {k: v.to(device) for k, v in y.items()}
 
                 logits = model(X)
 
+                # TODO: wrong when y: dict
                 loss = loss_fn(logits / T, y)
 
                 optimizer.zero_grad()
@@ -152,7 +155,7 @@ class GlobalThreshold():
             for batch, _ in dl:
                 X, y = batch['X'], batch['y']
                 X = {k: v.to(device) for k, v in X.items()}
-                y = y.to(device)
+                y = {k: v.to(device) for k, v in y.items()}
                 logits = model(X)
                 preds = logits / T
                 
