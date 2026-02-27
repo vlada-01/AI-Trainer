@@ -14,7 +14,7 @@ To run this project locally:
 - NVIDIA Drivers  
 - NVIDIA Container Toolkit  
 
-**How to Start the System** - docker compose up -d --build
+**How to Start the System** - docker compose up -d --build (Demo: https://github.com/vlada-01/Demo)
 
 ---
 
@@ -45,10 +45,10 @@ The system is designed as a modular, configuration-driven MLOps platform where e
 - **Configuration Layer (Pydantic Schemas)**  
   All experiments are defined via configuration files (datasets, models, training, post-processing). This makes experiments fully reproducible and removes hardcoded logic from the training pipeline.
 
-- **Training & Evaluation Engine (PyTorch)**  
+- **Training & Evaluation Engine (PyTorch)**
   Responsible for model creation, fine-tuning, training loops, and evaluation. The engine supports both CPU and GPU execution and can be extended with new models and training strategies.
 
-- **Post-Processing Pipeline**  
+- **Post-Processing Pipeline**
   Applies optional steps such as calibration and thresholding on top of raw model predictions.
 
 - **Experiment Tracking (MLflow)**  
@@ -61,9 +61,7 @@ This architecture enables a clean separation of concerns between orchestration, 
 
 
 
-**NOTE:** This system is under active development. Some features may be incomplete, and certain edge cases may not yet be fully handled. Stability and test coverage are continuously improving.
-
-**IMPORTANT** Next updates: Fine-tune for developer use-case(currently disabled); Extending scope of the system by generalizing available tasks(currently supported classification tasks)  
+**NOTE:** This system is under active development. Some features may be incomplete or disabled, and certain cases may not yet be fully handled. Stability and test coverage are continuously improving.
 
 ## Docs
 **coming soon**
