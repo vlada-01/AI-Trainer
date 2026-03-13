@@ -1,8 +1,6 @@
 from packages.train_lib.prepare_train.metrics.metrics_manager import Metric, AvailableMetrics
 import torch
 
-from packages.core_lib.pps.post_processor import UNKNOWN_CLASS
-
 class  Recall(Metric):
     def __init__(self):
         self.name = AvailableMetrics.recall
@@ -20,7 +18,7 @@ class  Recall(Metric):
         self.fns = torch.zeros(self.N, dtype=torch.float)
     
     def update(self, preds , targets):
-        unknown_cls_mask = preds == UNKNOWN_CLASS
+        unknown_cls_mask = preds == -1
         preds = preds[~unknown_cls_mask]
         targets = targets[~unknown_cls_mask]
         correct = (preds == targets)

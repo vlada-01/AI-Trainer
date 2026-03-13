@@ -1,7 +1,7 @@
 from packages.train_lib.prepare_data.data_builder import build_data
-from packages.core_lib.model_builder import build_model
+from packages.prepare_model.model_builder import build_model
 from packages.train_lib.prepare_train.train_builder import prepare_engine
-from packages.core_lib.models.model.model import update_model_pps
+from packages.prepare_model.models.model.model import update_model_pps
 
 import train_server.schemas.job_request as requests
 

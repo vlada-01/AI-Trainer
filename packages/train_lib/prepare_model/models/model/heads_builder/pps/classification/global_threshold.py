@@ -1,6 +1,6 @@
 import torch
 
-from packages.core_lib.models.model.heads_builder.pps.pp_builder import PostProcessor
+from packages.prepare_model.models.model.heads_builder.pps.pp_builder import PostProcessor
 
 from packages.logger.logger import get_logger
 

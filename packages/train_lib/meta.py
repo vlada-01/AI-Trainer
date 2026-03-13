@@ -2,7 +2,7 @@ from enum import Enum
 
 from packages.train_lib.prepare_data.metas.meta import DataMeta
 from packages.train_lib.prepare_train.meta import TrainMeta
-from packages.core_lib.meta import ModelMeta
+from packages.prepare_model.meta import ModelMeta
 
 class AvailableTasks(Enum, str):
     classification = 'classification'

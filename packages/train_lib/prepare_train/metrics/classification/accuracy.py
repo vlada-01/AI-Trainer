@@ -1,8 +1,6 @@
 from packages.train_lib.prepare_train.metrics.metrics_manager import Metric, AvailableMetrics
 import torch
 
-from packages.core_lib.pps.post_processor import UNKNOWN_CLASS
-
 class Accuracy(Metric):
     def __init__(self):
         self.name = AvailableMetrics.accuracy
@@ -17,7 +15,7 @@ class Accuracy(Metric):
         self.ds_size = 0
     
     def update(self, preds, targets):
-        unknown_cls_mask = preds == UNKNOWN_CLASS
+        unknown_cls_mask = preds == -1
         preds = preds[~unknown_cls_mask]
         targets = targets[~unknown_cls_mask]
 

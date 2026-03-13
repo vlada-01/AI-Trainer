@@ -2,7 +2,7 @@ from enum import Enum
 import networkx as nx
 import torch.nn as nn
 
-from packages.core_lib.models.dag_net.nodes import initialize_nodes
+from packages.prepare_model.models.dag_net.nodes import initialize_nodes
 
 from packages.logger.logger import get_logger
 

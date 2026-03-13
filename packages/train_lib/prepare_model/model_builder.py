@@ -1,5 +1,5 @@
-from packages.core_lib.meta import create_meta
-from packages.core_lib.models.model.model import create_model
+from packages.prepare_model.meta import create_meta
+from packages.prepare_model.models.model.model import create_model
 
 from packages.logger.logger import get_logger
 

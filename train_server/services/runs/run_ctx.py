@@ -9,7 +9,7 @@ from typing import Dict, Optional
 from train_server.schemas.job_response import JobResponse
 import train_server.schemas.job_request as requests
 
-from packages.core_lib.models.model.model import Model 
+from packages.prepare_model.models.model.model import Model 
 from packages.train_lib.prepare_train.engines.engine_manager import EngineManager
 
 from packages.train_lib.meta import Meta

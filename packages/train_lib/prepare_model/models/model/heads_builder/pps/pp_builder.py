@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 import torch
 
 from packages.train_lib.meta import AvailableTasks
-from packages.core_lib.models.model.heads_builder.pps.classification.calibration import Calibration
-from packages.core_lib.models.model.heads_builder.pps.classification.global_threshold import GlobalThreshold
+from packages.prepare_model.models.model.heads_builder.pps.classification.calibration import Calibration
+from packages.prepare_model.models.model.heads_builder.pps.classification.global_threshold import GlobalThreshold
 
 from packages.logger.logger import get_logger
 

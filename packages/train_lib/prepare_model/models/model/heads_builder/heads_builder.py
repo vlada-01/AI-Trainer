@@ -1,8 +1,8 @@
 from packages.train_lib.meta import AvailableTasks
 
-from packages.core_lib.models.model.heads_builder.heads.classification import Classification
-from packages.core_lib.models.model.heads_builder.heads.regression import Regression
-from packages.core_lib.models.model.heads_builder.heads.bbox import BBox 
+from packages.prepare_model.models.model.heads_builder.heads.classification import Classification
+from packages.prepare_model.models.model.heads_builder.heads.regression import Regression
+from packages.prepare_model.models.model.heads_builder.heads.bbox import BBox 
 
 HEADS_REGISTRY_MAP = {
     AvailableTasks.classification: Classification,
