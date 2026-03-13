@@ -21,11 +21,11 @@ services:
       - app_net
     restart: unless-stopped
 
-  backend:
-    container_name: backend
+  train_server:
+    container_name: train_server
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: train_server/Dockerfile
     
     tty: true
     
@@ -39,7 +39,8 @@ services:
     environment:
       SEED: "42"
 
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: debug
+      SERVICE_LOGGER: train_server
       MUTE_THIRD_PARTY_LOGS: "1"
 
       MLFLOW_TRACKING_URI: http://mlflow:5000
