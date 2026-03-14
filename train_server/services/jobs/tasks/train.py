@@ -1,6 +1,6 @@
 import mlflow
 
-from train_server.services.reader_writer import ArtifactWriter
+from packages.mlflow_logger.writer import MlflowWriter
 
 from packages.logger.logger import get_logger
 
@@ -17,30 +17,27 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
-        mlflow.log_params(cfgs.train_cfg.model_dump())
+        writer = MlflowWriter(job_id, run_id)
+        writer.log_params(cfgs.train_cfg.model_dump())
 
         log.info('Initializing Model Training')
-        engine.train_model()
+        engine.train_model(writer)
 
         log.info('Initializing Post Processor train')
         engine.train_pp()
 
-        log.info('Initializing validation set evaluation')
-        # FIXME: This crap shall log the error analysis in the file and this file shall be stored, not dict
-        _, error_analysis_dict = engine.evaluate_val()
-
-        model = engine.get_model()
-
         run_id = mlflow.active_run().info.run_id
-        with ArtifactWriter(job_id, run_id) as w:
-            w.save_data_cfg(cfgs.dl_cfg.model_dump())
-            w.save_model_cfg(cfgs.model_cfg.model_dump())
-            w.save_train_cfg(cfgs.train_cfg.model_dump())
-            # FIXME: need to store new meta properly
+        with writer.open_artifact_writer() as w:
+            w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')
+            w.log_cfg(cfgs.model_cfg.model_dump(), rel_path='cfgs/model_cfg.json')
+            w.log_cfg(cfgs.train_cfg.model_dump(), rel_path='cfgs/train_cfg.json')
+            # FIXME: need to update meta properly
             # w.save_meta(meta.to_dict())
-            w.save_model_state(model.state_dict())
-            w.save_error_analysis(error_analysis_dict)
-            w.log_artifacts()
+            model = engine.get_model()
+            w.log_model_state(model.state_dict(), rel_path='model/model.pt')
+            log.info('Initializing validation set evaluation')
+            metrics_results = engine.evaluate_val(w)
+        writer.log_metrics(metrics_results, 'validation')
 
     mlflow.end_run()
     result = 'Training is finished successfully'

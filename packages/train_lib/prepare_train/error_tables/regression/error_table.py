@@ -6,13 +6,16 @@ from packages.train_lib.prepare_train.error_tables.error_analysis_manager import
 
 class RegressionErrorTable(ErrorTable):
     def __init__(self):
-        self.df = pd.DataFrame()
+        super().__init__()
 
     def set_states(self, meta, key):
         pass
 
-    def restart(self):
+    def restart_error_table(self):
         self.df = pd.DataFrame()
+
+    def restart(self):
+        self.restart_error_table()
 
     # TODO: need to add post processing for regression to use pp-ed logits
     def update(self, ids, h_outs, targets):
@@ -41,5 +44,5 @@ class RegressionErrorTable(ErrorTable):
         else:
             self.df = pd.concat([self.df, new_df], ignore_index=True)
 
-    def get_results(self):
-        return {'df': self.df.to_dict(orient="records")}
+    def collect_error_table(self):
+        return self.df

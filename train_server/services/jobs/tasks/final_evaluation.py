@@ -1,7 +1,7 @@
 import os
 import mlflow
 
-from train_server.services.reader_writer import ArtifactWriter
+from packages.mlflow_logger.writer import MlflowWriter
 
 from packages.logger.logger import get_logger
 
@@ -21,27 +21,24 @@ def atomic_final_eval(engine, parent_id, meta, cfgs, data, job_id):
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
+        writer = MlflowWriter(job_id, run_id)
         exp_id = mlflow.active_run().info.experiment_id
         run_id = mlflow.active_run().info.run_id
 
-        #FIXME: this crap is wrong, need to store error_analysis_dict in the file, not dict
-        metrics_results, error_analysis_dict = engine.evaluate_test()
-        model = engine.get_model()
-
-        for k, metrics in metrics_results.items():
-            mlflow.log_metrics({f'test/{k}/{name.lower()}': metric_val for name, metric_val in metrics})
-        with ArtifactWriter(job_id, run_id) as w:
-            w.save_data_cfg(cfgs.dl_cfg.model_dump())
-            w.save_model_cfg(cfgs.model_cfg.model_dump())
-            w.save_train_cfg(cfgs.train_cfg.model_dump())
+        with writer.open_artifact_writer() as w:
+            w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')
+            w.log_cfg(cfgs.model_cfg.model_dump(), rel_path='cfgs/model_cfg.json')
+            w.log_cfg(cfgs.train_cfg.model_dump(), rel_path='cfgs/train_cfg.json')
             # FIXME: need to update meta properly
             # w.save_meta(meta.to_dict())
-            w.save_model_state(model.state_dict())
-            w.save_error_analysis(error_analysis_dict)
-            w.log_artifacts()
+            model = engine.get_model()
+            w.log_model_state(model.state_dict(), rel_path='model/model.pt')
+            log.info('Initializing test evaluation')
+            metrics_results = engine.evaluate_test(w)
+        writer.log_metrics(metrics_results, prefix='test')
 
         parent_url = f'{mlflow_public_uri}/#/experiments/{exp_id}/runs/{parent_id}'
-        mlflow.set_tag('Parent_run_id', parent_url)
+        writer.set_tags({'Parent url': parent_url})
     mlflow.end_run()
     result = ''
     ctx_dict = {}

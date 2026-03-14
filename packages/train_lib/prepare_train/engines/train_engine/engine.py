@@ -1,5 +1,4 @@
 import torch
-import mlflow
 
 from packages.logger.logger import get_logger
 
@@ -30,9 +29,9 @@ class TrainEngine:
         self.log_train_metrics = log_train_metrics
     
 
-    def train_model(self, model, train, val):
+    def train_model(self, model, train, val, writer):
         log.info('Starting model training')
-        self.train_epochs(model, train, val)
+        self.train_epochs(model, train, val, writer)
 
     def train_pp(self, model, val):
         if not self.model.are_pps_present():
@@ -51,7 +50,7 @@ class TrainEngine:
 
         self.model.fit_pps()
 
-    def train_epochs(self, model, train, val):
+    def train_epochs(self, model, train, val, writer):
         model.to(self.device)
         model.train()
         for ep in range(self.epochs):
@@ -60,12 +59,12 @@ class TrainEngine:
 
             log.info(f'Logging validation metrics for the epoch: {ep}')
             results = self.eval_epoch(val)
-            self.log_metrics(results, ep, prefix='validation')
+            writer.log_metrics(results, 'validation', ep)
 
             if self.log_train_metrics:
                 log.info(f'Logging train metrics for the epoch: {ep}')
                 results = self.eval_epoch(train)
-                self.log_metrics(results, ep, prefix='train')
+                writer.log_metrics(results, 'train', ep)
            
             # TODO: does not work if the scheduler requires loss
             # does not work if the scheduler is batch based
@@ -119,8 +118,3 @@ class TrainEngine:
 
         metrics_results = self.metrics.collect_results()
         return metrics_results
-
-    @staticmethod
-    def log_metrics(results, ep, prefix):
-        for k, metrics in results.items():
-            mlflow.log_metrics({f'{prefix}/{k}/{name.lower()}': metric_val for name, metric_val in metrics}, step=ep)

@@ -20,17 +20,17 @@ class EngineManager:
         self.train_engine: TrainEngine = prepare_train_engine(meta)
         self.eval_engine: EvaluationEngine = prepare_eval_engine(meta)
 
-    def train_model(self):
-        return self.train_engine.train_model(self.model, self.train, self.val)
+    def train_model(self, writer):
+        return self.train_engine.train_model(self.model, self.train, self.val, writer)
     
     def train_pp(self):
         return self.train_engine.train_pp(self.model, self.val)
 
-    def evaluate_val(self):
-        return self.eval_engine.evaluate(self.model, self.val)
+    def evaluate_val(self, artifact_writer):
+        return self.eval_engine.evaluate(self.model, self.val, artifact_writer)
 
-    def evaluate_test(self):
-        return self.eval_engine.evaluate(self.model, self.test, return_details=True)
+    def evaluate_test(self, artifact_writer):
+        return self.eval_engine.evaluate(self.model, self.test, artifact_writer, return_details=True)
 
     def get_model(self):
         return self.model

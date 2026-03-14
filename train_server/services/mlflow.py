@@ -2,7 +2,7 @@ import os
 from uuid import uuid4
 from train_server.schemas.mlflow import Experiment, Run
 
-from train_server.services.reader_writer import ArtifactReader
+from packages.mlflow_logger.reader import MlflowReader
 
 mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 
@@ -43,15 +43,18 @@ def get_runs(client, exp_name):
     ]
     return run_list
 
+# FIXME: update me according to MlflowReader, add metrics retrieval
 def get_run_results(client, run_id):
     job_id = uuid4().hex
     log.info('Initializing inspect process')
+    reader = MlflowReader(job_id, run_id)
 
     log.info(f'Retrieving logged artifacts for run_id: {run_id}')
-    with ArtifactReader(job_id, run_id) as r:
+    with reader.open_artifact_reader() as r:
         error_analysis_dict = r.load_error_analysis()
 
     run = client.get_run(run_id)
+    #FIXME: update this crap
     metrics = run.data.metrics
     results_dict = {
         'metrics': metrics,

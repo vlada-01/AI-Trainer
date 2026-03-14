@@ -5,10 +5,10 @@ from packages.train_lib.prepare_train.error_tables.error_analysis_manager import
 
 class ClassificationErrorTable(ErrorTable):
     def __init__(self):
+        super().__init__()
+        # extras
         self.num_classes = None
         self.confusion_matrix = None
-
-        self.df = pd.DataFrame()
 
     def set_states(self, meta, key):
         data_meta = meta.get_data_meta()
@@ -16,8 +16,11 @@ class ClassificationErrorTable(ErrorTable):
         self.num_classes = uniques
         self.confusion_matrix = np.zeros((uniques, uniques + 1))
 
+    def restart_error_table(self):
+        self.df = pd.DataFrame() 
+
     def restart(self):
-        self.df = pd.DataFrame()
+        self.restart_error_table()
         self.confusion_matrix = np.zeros((self.num_classes, self.num_classes + 1))
     
     def update(self, ids, h_outs, targets):
@@ -49,8 +52,10 @@ class ClassificationErrorTable(ErrorTable):
         else:
             self.df = pd.concat([self.df, new_df], ignore_index=True)
 
-    def get_results(self):
+    def collect_error_table(self):
+        return self.df
+
+    def collect_extras(self):
         return {
-            'df': self.df.to_dict(orient="records"),
             'confusion_matrix': self.confusion_matrix.tolist()
         }

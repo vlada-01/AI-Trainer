@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import pandas as pd
 
 from packages.train_lib.meta import AvailableTasks
 
@@ -34,33 +35,43 @@ class ErrorAnalysisManager:
     def __init__(self, error_analysis_dict):
         self.error_analysis = error_analysis_dict
 
-    def restart_error_tables(self):
+    def restart(self):
         for v in self.error_analysis.values():
             v.restart()
 
-    def update_error_tables(self, ids, h_outs, targets):
+    def restart_error_tables(self):
+        for v in self.error_analysis.values():
+            v.restart_error_table()
+
+    def update(self, ids, h_outs, targets):
         for k, v in self.error_analysis.items():
             curr_h_outs = h_outs[k]
             curr_targets = targets[k]
-            # TODO: update this crap inside the specific error table
             v.update(ids, curr_h_outs, curr_targets)
 
-    def test_update_error_analysis(self, ids, preds, targets):
-        for k, v in self.items():
-            curr_preds = preds[k]
-            curr_targets = targets[k]
-            # TODO: update this crap inside the specific error table
-            v.test_update(ids, curr_preds, curr_targets)
-
-    def get_results(self):
+    # returns pandas df
+    def collect_error_tables(self):
         results = {}
         for k, v in self.error_analysis.items():
-            results[k] = v.get_results()
+            results[k] = v.collect_error_table()
+        return results
+
+    def collect_extras(self):
+        results = {}
+        for k, v in self.error_analysis.items():
+            results[k] = v.collect_extras()
         return results
 
 class ErrorTable(ABC):
+    def __init__(self):
+        self.df = pd.DataFrame()
+
     @abstractmethod
     def set_states(self, meta, key):
+        pass
+
+    @abstractmethod
+    def restart_error_table(self):
         pass
 
     @abstractmethod
@@ -72,9 +83,8 @@ class ErrorTable(ABC):
         pass
 
     @abstractmethod
-    def test_update(self, ids, h_outs, targets):
+    def collect_error_table(self):
         pass
 
-    @abstractmethod
-    def get_results(self):
-        pass
+    def collect_extras(self):
+        return {}

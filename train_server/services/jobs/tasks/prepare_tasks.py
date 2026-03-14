@@ -1,11 +1,11 @@
 from packages.train_lib.prepare_data.data_builder import build_data
-from packages.prepare_model.model_builder import build_model
+from packages.train_lib.prepare_model.model_builder import build_model
 from packages.train_lib.prepare_train.train_builder import prepare_engine
-from packages.prepare_model.models.model.model import update_model_pps
+from packages.train_lib.prepare_model.models.model.model import update_model_pps
 
 import train_server.schemas.job_request as requests
 
-from train_server.services.reader_writer import ArtifactReader
+from packages.mlflow_logger.reader import MlflowReader
 
 from packages.logger.logger import get_logger
 
@@ -79,14 +79,16 @@ def atomic_prepare_complete_train(meta, cfgs):
 def atomic_prepare_default_from_run(meta, cfg, job_id):
     log.info('Initiazling prepare train with configurations from run')
     run_id = cfg.run_id
+    reader = MlflowReader(job_id, run_id)
 
-    with ArtifactReader(job_id, run_id) as r:
-        ds_cfg = r.load_data_cfg()
-        model_cfg = r.load_model_cfg()
-        train_cfg = r.load_train_cfg()
+    with reader.open_artifact_reader() as r:
+        ds_cfg = r.log_cfg(rel_path='cfgs/dataset_cfg.json')
+        model_cfg = r.log_cfg(rel_path='cfgs/model_cfg.json')
+        train_cfg = r.log_cfg(rel_path='cfgs/train_cfg.json')
         model_state_dict = r.load_model_state()
 
-        meta = r.load_meta()
+        # FIXME: needs to be udpated
+        # meta = r.load_meta()
     
     cfgs = requests.PrepareCompleteTrainJobRequest(
         dataset_cfg=requests.PrepareDatasetJobRequest(**ds_cfg),
