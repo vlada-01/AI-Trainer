@@ -29,6 +29,7 @@ services:
     
     volumes:
     - ./train_server:/trainer/train_server
+    - ./packages:/trainer/packages
 
     tty: true
     
