@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Union, List, Dict, Any
 
-from packages.train_lib.prepare_train.metrics.metrics_manager import AvailableMetrics
+from packages.train_lib.prepare_train.metrics.metric import AvailableMetrics
 
 from train_server.schemas.data import TransformStep
 from train_server.schemas.models import Layers

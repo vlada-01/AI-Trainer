@@ -1,7 +1,7 @@
 from torch import nn
 from enum import Enum
 
-import packages.prepare_model.models.dag_net.layers as layers
+import packages.train_lib.prepare_model.models.dag_net.layers as layers
 
 from packages.logger.logger import get_logger
 

@@ -1,11 +1,10 @@
 from enum import Enum
 from pprint import pformat
-from abc import ABC, abstractmethod
 import torch
 
-from packages.train_lib.meta import AvailableTasks
-from packages.prepare_model.models.model.heads_builder.pps.classification.calibration import Calibration
-from packages.prepare_model.models.model.heads_builder.pps.classification.global_threshold import GlobalThreshold
+from packages.train_lib.tasks import AvailableTasks
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.classification.calibration import Calibration
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.classification.global_threshold import GlobalThreshold
 
 from packages.logger.logger import get_logger
 
@@ -99,35 +98,6 @@ class PostProcessorChain:
                 state_buf, _ = pp.process(state_buf, False)
 
 
-class PostProcessor(ABC):
-    def __init__(self, name, in_key, out_key, fallback_key, trainable=False):
-        self.name = name
-        self.in_key = in_key
-        self.out_key = out_key
-        self.trainable = trainable
-        self.fallback_key = fallback_key
 
-    def resolve(self, state):
-        return state
-
-    @abstractmethod
-    def process(self, state, return_details=False):
-        pass
-
-    def is_trainable(self):
-        return self.trainable
-    
-    @abstractmethod
-    def train(self, model, val, device):
-        pass
-
-    def get_name(self):
-        return self.name
-
-    def get_in_key(self):
-        return self.in_key
-
-    def get_out_key(self):
-        return self.out_key
     
 

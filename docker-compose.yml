@@ -27,6 +27,9 @@ services:
       context: .
       dockerfile: train_server/Dockerfile
     
+    volumes:
+    - ./train_server:/trainer/train_server
+
     tty: true
     
     stdin_open: true

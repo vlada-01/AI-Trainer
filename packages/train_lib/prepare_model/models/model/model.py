@@ -1,6 +1,6 @@
-from packages.prepare_model.models.dag_net.dag_builder import build_dag
-from packages.prepare_model.models.model.heads_builder.heads_builder import build_heads
-from packages.prepare_model.models.model.heads_builder.pps.pp_builder import attach_pps
+from packages.train_lib.prepare_model.models.dag_net.dag_builder import build_dag
+from packages.train_lib.prepare_model.models.model.heads_builder.heads_builder import build_heads
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.pp_builder import attach_pps
 
 from packages.logger.logger import get_logger
 

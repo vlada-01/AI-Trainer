@@ -4,7 +4,7 @@ from typing import List, Dict, Literal, Union
 from train_server.schemas.job_response import ErrorInfo, JobResponse
 
 from train_server.services.runs.state_manager import AvailableRunTypes
-from packages.train_lib.meta import AvailableTasks
+from packages.train_lib.tasks import AvailableTasks
 
 class RunCtxResponse(BaseModel):
     run_id: str

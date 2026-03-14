@@ -1,7 +1,4 @@
-from abc import ABC, abstractmethod
-import pandas as pd
-
-from packages.train_lib.meta import AvailableTasks
+from packages.train_lib.tasks import AvailableTasks
 
 from packages.train_lib.prepare_train.error_tables.classification.error_table import ClassificationErrorTable
 from packages.train_lib.prepare_train.error_tables.regression.error_table import RegressionErrorTable
@@ -62,29 +59,4 @@ class ErrorAnalysisManager:
             results[k] = v.collect_extras()
         return results
 
-class ErrorTable(ABC):
-    def __init__(self):
-        self.df = pd.DataFrame()
 
-    @abstractmethod
-    def set_states(self, meta, key):
-        pass
-
-    @abstractmethod
-    def restart_error_table(self):
-        pass
-
-    @abstractmethod
-    def restart(self):
-        pass
-    
-    @abstractmethod
-    def update(self, ids, h_outs, targets):
-        pass
-
-    @abstractmethod
-    def collect_error_table(self):
-        pass
-
-    def collect_extras(self):
-        return {}

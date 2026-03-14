@@ -5,7 +5,7 @@ import inspect
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from packages.prepare_model.models.dag_net.layers.layers_builder import build_layer, build_layers
+from packages.train_lib.prepare_model.models.dag_net.layers.layers_builder import build_layer, build_layers
 
 from packages.logger.logger import get_logger
 

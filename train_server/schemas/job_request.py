@@ -15,12 +15,12 @@ class PrepareDatasetJobRequest(BaseModel):
     data_meta_cfg: DataMetaCfg
 
 class PrepareModelJobRequest(BaseModel):
-    model_config: ModelCfg
+    model_cfg: ModelCfg
     model_meta_cfg: Optional[ModelMetaCfg] = None
 
     @model_validator(mode='after')
     def validate_graph(self):
-        dag = self.model_config.dag
+        dag = self.model_cfg.dag
         nodes = dag.nodes
         edges = dag.edges
         node_ids = set(node.id for node in nodes)

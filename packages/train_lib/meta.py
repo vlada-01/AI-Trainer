@@ -1,14 +1,6 @@
-from enum import Enum
-
 from packages.train_lib.prepare_data.metas.meta import DataMeta
 from packages.train_lib.prepare_train.meta import TrainMeta
-from packages.prepare_model.meta import ModelMeta
-
-class AvailableTasks(Enum, str):
-    classification = 'classification'
-    regression = 'regression'
-    bbox = 'bbox'
-
+from packages.train_lib.prepare_model.meta import ModelMeta
 
 class Meta:
     def __init__(self, specs_cfg):
