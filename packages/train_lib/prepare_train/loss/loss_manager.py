@@ -10,7 +10,7 @@ log = get_logger(__name__)
 def prepare_losses(loss_fns_cfg):
     log.info('Initializing Losses')
     loss_fns = {}
-    for k, loss_fn in loss_fns_cfg:
+    for k, loss_fn in loss_fns_cfg.items():
         weight = loss_fn.weight
         fn = loss_fn.fn
 

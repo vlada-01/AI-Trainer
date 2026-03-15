@@ -20,13 +20,13 @@ class PrepareModelJobRequest(BaseModel):
 
     @model_validator(mode='after')
     def validate_graph(self):
-        dag = self.model_cfg.dag
+        dag = self.model_cfg.dag_cfg
         nodes = dag.nodes
         edges = dag.edges
         node_ids = set(node.id for node in nodes)
         e_node_ids = set([x for t in edges for x in t])
-        diff = node_ids - e_node_ids
-        if not diff:
+        diff = e_node_ids - node_ids
+        if diff:
             raise ValueError(f'DAG configuration error: Invalid nodes  {diff}')
         return self
             

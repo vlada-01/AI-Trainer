@@ -80,8 +80,9 @@ class RunContext:
             if not all(hasattr(self, k) for k in result.keys()):
                 raise ValueError(f'Not all fields exist in the RunContext')
             for k, v_dict in result.items():
+                    obj = getattr(self, k)
                     for attr, v in v_dict.items():
-                        setattr(k, attr, v)
+                        setattr(obj, attr, v)
                         
             self.updated_at = datetime.now(timezone.utc)
 
@@ -93,7 +94,7 @@ class RunContext:
     async def get_prepare_model_params(self):
         async with self.run_ctx_lock:
             return(
-                self.meta
+                self.meta,
             )
 
     async def get_prepare_engine_params(self):
@@ -116,19 +117,20 @@ class RunContext:
     async def get_prepare_complete_train_params(self):
          async with self.run_ctx_lock:
              return (
-                 self.meta
+                 self.meta,
              )
          
     async def get_prepare_default_from_run_params(self):
         async with self.run_ctx_lock:
              return (
-                 self.meta
+                 self.meta,
              )
          
     async def get_post_process_params(self):
         async with self.run_ctx_lock:
             return (
                 self.runtime.engine,
+                self.meta,
                 self.cfgs.model_cfg,
             )
          

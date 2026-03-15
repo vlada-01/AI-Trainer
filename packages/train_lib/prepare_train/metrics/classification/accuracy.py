@@ -16,11 +16,11 @@ class Accuracy(Metric):
     
     def update(self, preds, targets):
         unknown_cls_mask = preds == -1
-        preds = preds[~unknown_cls_mask]
-        targets = targets[~unknown_cls_mask]
+        final_preds = preds[~unknown_cls_mask]
+        final_targets = targets[~unknown_cls_mask]
 
-        self.ds_size += preds.size(0)
-        self.scored += (preds == targets).type(torch.float).sum().item()
+        self.ds_size += final_preds.size(0)
+        self.scored += (final_preds == final_targets).type(torch.float).sum().item()
 
     def show(self):
         return self.name, self.scored * 100 / (self.ds_size + 1e-12)

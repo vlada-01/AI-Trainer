@@ -12,21 +12,21 @@ log = get_logger(__name__)
 
 UNKNOWN_CLASS = -1
 
-class AvailablePostProcessors(Enum):
+class AvailablePostProcessors(str, Enum):
     #for classification
-    calibration = 0
-    global_threshold = 1
+    calibration = 'calibration'
+    global_threshold = 'global_threshold'
 
 
 PP_REGISTRY_MAP = {
     AvailableTasks.classification: {
-        AvailablePostProcessors.calibration: Calibration,
-        AvailablePostProcessors.global_threshold: GlobalThreshold,
+        AvailablePostProcessors.calibration: (Calibration, 0),
+        AvailablePostProcessors.global_threshold: (GlobalThreshold, 1),
     },
 }
 
 def attach_pps(heads, model_meta, pps_cfg):
-    log.debug('Initializing post processor builder for cfg:\n%s', pformat(pps_cfg.model_dump()))
+    log.debug('Initializing post processor builder for cfg:\n%s', pformat(pps_cfg))
     if not pps_cfg:
         return heads
     specs_mapper = model_meta.specs_mapper
@@ -34,7 +34,7 @@ def attach_pps(heads, model_meta, pps_cfg):
     for k, head in heads.items():
         pps_list = pps_cfg[k]
         log.info(f'Adding PostProcessorChain in Head: {k}')
-        pp_chain = build_pp(head.get_task, pps_list)
+        pp_chain = build_pp(head.get_task(), pps_list)
         head.attach_pps(pp_chain)
     log.info('PostProcessorChain(s) for Heads are successfully prepared')
     return heads
@@ -44,16 +44,17 @@ def build_pp(task, pps_list):
     pps = []
     if task not in PP_REGISTRY_MAP:
         raise ValueError(f'Post Processor is not supported for the task: {task.value}')
-    # safe check that user can bypass ordering problems
-    # TODO: maybe later won't be easy to insert the pp at some point, new logic will be needed
-    pps_list = sorted(pps_list, key=lambda x: x.type)
+    
     for pp_cfg in pps_list:
-        type = pp_cfg.type
+        pp_type = pp_cfg.type
         kwargs = pp_cfg.model_dump(exclude={'type'})
-        if type not in PP_REGISTRY_MAP[task]:
-            raise ValueError(f'Post Processor is not supported for the task, pp: {task, type}')
-        log.info(f'Adding {type(type).__name__} in PostProcessorChain')
-        pps.append(PP_REGISTRY_MAP[task][type](**kwargs))
+        if pp_type not in PP_REGISTRY_MAP[task]:
+            raise ValueError(f'Post Processor is not supported for the task, pp: {task, pp_type}')
+        log.info(f'Adding {type(pp_type).__name__} in PostProcessorChain')
+        cls, priority = PP_REGISTRY_MAP[task][pp_type]
+        pps.append((cls(**kwargs), priority))
+    pps = sorted(pps, key=lambda x: x[1])
+    pps = [t[0] for t in pps]
     return PostProcessorChain(pps)
 
 class PostProcessorChain:
@@ -70,19 +71,19 @@ class PostProcessorChain:
         for pp in self.pps:
             in_key = pp.get_in_key()
             if in_key not in self.state:
-                self.try_fallback(self, pp)
+                self.try_fallback(self, pp, self.state)
 
             self.state, details = pp.process(self.state, return_details)
             if details:
-                detailed = {**detailed, **details}
+                detailed.update(details)
 
         last_out_key = self.pps[-1].get_out_key()
         self.state['final'] = self.state.pop(last_out_key)
         return self.state, detailed
     
-    def try_fallback(self, pp):
+    def try_fallback(self, pp, state):
         log.debug(f'Running fallback for the pp" {pp.name}')
-        self.state = pp.resolve(self.state)
+        state = pp.resolve(state)
     
     def collect_samples(self, logits, targets):
         self.state_buf['logits'].append(logits.detach().cpu())
@@ -94,6 +95,10 @@ class PostProcessorChain:
         for pp in self.pps:
             if pp.is_trainable():
                 log.info(f'Initializing train for post processor: {pp.name}')
+                in_key = pp.get_in_key()
+                if in_key not in self.state_buf:
+                    self.try_fallback(pp, state_buf)
+                    
                 pp.train(state_buf, targets)
                 state_buf, _ = pp.process(state_buf, False)
 

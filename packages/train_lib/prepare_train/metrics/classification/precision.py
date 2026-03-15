@@ -21,12 +21,12 @@ class Precision(Metric):
 
     def update(self, preds, targets):
         unknown_cls_mask = preds == -1
-        preds = preds[~unknown_cls_mask]
-        targets = targets[~unknown_cls_mask]
-        correct = (preds == targets)
+        final_preds = preds[~unknown_cls_mask]
+        final_targets = targets[~unknown_cls_mask]
+        correct = (final_preds == final_targets)
 
-        tps = torch.bincount(preds[correct], minlength=self.N)
-        fps = torch.bincount(preds[~correct], minlength=self.N)
+        tps = torch.bincount(final_preds[correct], minlength=self.N)
+        fps = torch.bincount(final_preds[~correct], minlength=self.N)
 
         self.tps += tps.cpu().type(torch.float)
         self.fps += fps.cpu().type(torch.float)

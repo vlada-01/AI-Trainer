@@ -6,9 +6,9 @@ class Classification(Head):
     def __init__(self, task):
         super().__init__(task=task)
 
-    def process(self, x, apply_pp, return_details):
+    def process(self, logits, apply_pp, return_details):
         if not apply_pp:
-            probs = torch.softmax(x, dim=1)
+            probs = torch.softmax(logits, dim=1)
             preds = probs.argmax(dim=1)
             return {
                 'mandatory': {
@@ -18,7 +18,7 @@ class Classification(Head):
                 'optional': {}
             }
         else:
-            results, details = self.pps_chain.post_process(x, return_details)
+            results, details = self.pps_chain.post_process(logits, return_details)
             return {
                 'mandatory': {
                     'probs': results['probs'],
@@ -26,3 +26,12 @@ class Classification(Head):
                 },
                 'optional': details
             }
+    
+    def get_final_out(self, h_out):
+        return h_out['mandatory']['final']
+
+    def get_metrics_out(self, h_out):
+        return h_out['mandatory']['final']
+    
+    def get_error_analysis_out(self, h_out):
+        return h_out

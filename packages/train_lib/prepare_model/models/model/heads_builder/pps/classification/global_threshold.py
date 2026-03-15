@@ -47,7 +47,7 @@ class GlobalThreshold(PostProcessor):
         preds = torch.argmax(probs, dim=1)
         conf = torch.max(probs, dim=1).values
         accepted = conf >= self.threshold
-        preds = preds[~accepted] = -1
+        preds[~accepted] = -1
         state[self.out_key] = preds
         if return_details:
             return state, {self.name: preds}

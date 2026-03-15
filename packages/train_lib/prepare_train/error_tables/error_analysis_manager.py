@@ -15,7 +15,7 @@ ERROR_TABLE_REGISTRY_MAP = {
 def prepare_error_analysis(meta):
     log.info('Initializing ErrorAnalysisManager')
     error_analysis_dict = {}
-    for k, specs in meta.get_specs():
+    for k, specs in meta.get_specs().items():
         task = specs.task
         log.info(f'Initializing ErrorTable for the task: {task}')
         if task not in ERROR_TABLE_REGISTRY_MAP:

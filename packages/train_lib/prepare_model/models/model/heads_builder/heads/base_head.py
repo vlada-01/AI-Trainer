@@ -1,4 +1,5 @@
-
+from abc import ABC, abstractmethod
+# FIXME: consider updating this as abstract class because there are functions required from model
 class Head:
     def __init__(self, task):
         self.task = task
@@ -19,5 +20,18 @@ class Head:
     def fit_pps(self):
         self.pps_chain.fit_pps()
 
-    def process(self, x, apply_pp, return_details):
-        return x
+    @abstractmethod
+    def process(self, logits, apply_pp, return_details):
+        pass
+    
+    @abstractmethod
+    def get_final_out(self, h_out):
+        pass
+
+    @abstractmethod
+    def get_metrics_out(self, h_out):
+        pass
+
+    @abstractmethod
+    def get_error_analysis_out(self, h_out):
+        pass

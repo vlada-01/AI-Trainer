@@ -13,24 +13,24 @@ def build_dag(cfg, model_meta):
     nodes_cfg = cfg.nodes
     edges = cfg.edges
     out_keys = cfg.out_keys
-    nodes = initialize_nodes(nodes_cfg)
+    nodes_dict = initialize_nodes(nodes_cfg)
     log.info('Initializing DAGNet')
-    dag = DAGNet(nodes, edges, out_keys, model_meta)
+    dag = DAGNet(nodes_dict, edges, out_keys, model_meta)
     log.info('DAG builder completed successfully')
     return dag
 
 class DAGNet(nn.Module):
-    def __init__(self, nodes, edges, out_keys, model_meta):
+    def __init__(self, nodes_dict, edges, out_keys, model_meta):
         super().__init__()
 
         specs_mapper = model_meta.specs_mapper
         self.out_keys = [specs_mapper(key) for key in out_keys]
 
-        node_ids = nodes.keys()
+        node_ids = nodes_dict.keys()
         graph = nx.DiGraph()
         graph.add_nodes_from([id for id in node_ids])
         graph.add_edges_from([(u, v) for u, v in edges])
-        for node in nodes:
+        for node in nodes_dict.values():
             if graph.out_degree(node.id) == 0:
                 out_keys = node.get_out_keys()
                 mapped = [specs_mapper(k) for k in out_keys]
@@ -42,7 +42,7 @@ class DAGNet(nn.Module):
         self.sorted_ids = self.topological_sort(graph)
         log.debug('Topological sort:\n%s', self.sorted_ids)
 
-        self.nodes = nn.ModuleDict({k: v for k, v in nodes.items()})
+        self.nodes = nn.ModuleDict({k: v for k, v in nodes_dict.items()})
         self.state = dict()
 
     def forward(self, x_dict):

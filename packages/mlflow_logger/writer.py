@@ -13,7 +13,7 @@ class MlflowWriter:
 
     def log_metrics(self, metrics: dict, prefix='final', ep=None):
         for k, metrics_list in metrics.items():
-            self.log_metrics({f'{prefix.lower()}-{k}-{name.lower()}': metric_val for name, metric_val in metrics_list}, step=ep)
+            mlflow.log_metrics({f'{prefix.lower()}-{k}-{name.lower()}': metric_val for name, metric_val in metrics_list}, step=ep)
 
     def open_artifact_writer(self):
         return ArtifactWriter(self.job_id, self.run_id)

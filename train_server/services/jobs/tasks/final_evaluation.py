@@ -21,9 +21,9 @@ def atomic_final_eval(engine, parent_id, meta, cfgs, data, job_id):
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
-        writer = MlflowWriter(job_id, run_id)
         exp_id = mlflow.active_run().info.experiment_id
         run_id = mlflow.active_run().info.run_id
+        writer = MlflowWriter(job_id, run_id)
 
         with writer.open_artifact_writer() as w:
             w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')

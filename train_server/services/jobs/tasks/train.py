@@ -17,6 +17,7 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
     run_name = data.run_name
     log.info(f'Starting run "{run_name}" for experiment "{exp_name}"')
     with mlflow.start_run(run_name=run_name):
+        run_id = mlflow.active_run().info.run_id
         writer = MlflowWriter(job_id, run_id)
         writer.log_params(cfgs.train_cfg.model_dump())
 
@@ -26,7 +27,7 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
         log.info('Initializing Post Processor train')
         engine.train_pp()
 
-        run_id = mlflow.active_run().info.run_id
+        
         with writer.open_artifact_writer() as w:
             w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')
             w.log_cfg(cfgs.model_cfg.model_dump(), rel_path='cfgs/model_cfg.json')

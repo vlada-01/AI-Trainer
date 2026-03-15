@@ -31,17 +31,17 @@ METRICS_REGISTRY_MAP = {
 def prepare_metrics(metrics_cfg, meta):
     metrics_dict = {}
     log.info('Initializing Metrics')
-    for k, metrics in metrics_cfg:
+    for k, metrics in metrics_cfg.items():
         log.info(f'Assembling metrics for the spec: {k}')
+        task = meta.get_specs()[k].task
+        if task not in METRICS_REGISTRY_MAP:
+                raise ValueError(f'Metric is not supported for the spec: {task}')
         assembled_metrics = []
         for metric in metrics:
-            if k not in METRICS_REGISTRY_MAP:
-                raise ValueError(f'Metric is not supported for the spec: {k}')
-
             log.debug(f'Adding {metric.value} in the assembled metrics')
-            if metric not in METRICS_REGISTRY_MAP[k]:
+            if metric not in METRICS_REGISTRY_MAP[task]:
                 raise ValueError(f'Metric is not supported for the metric type: {metric}')
-            metric_obj = METRICS_REGISTRY_MAP[k][metric]()
+            metric_obj = METRICS_REGISTRY_MAP[task][metric]()
             metric_obj.set_states(meta, k)
             assembled_metrics.append(metric_obj)
         metrics_dict[k] = assembled_metrics

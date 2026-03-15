@@ -12,7 +12,7 @@ HEADS_REGISTRY_MAP = {
 
 def build_heads(meta):
     heads = {}
-    for k, spec in meta.get_specs():
+    for k, spec in meta.get_specs().items():
         task = spec.task
         if task not in HEADS_REGISTRY_MAP:
             raise ValueError(f'Head does not exist for the task: {task.value}')

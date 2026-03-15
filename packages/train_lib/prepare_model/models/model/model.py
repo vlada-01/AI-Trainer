@@ -11,23 +11,23 @@ def create_model(model_cfg, meta, model_meta):
     log.info('Initializing heads for Model')
     heads_dict = build_heads(meta)
     log.info('Adding Post Processors in Heads')
-    heads_with_pp = attach_pps(heads_dict, model_cfg.pp_cfg)
+    heads_with_pp = attach_pps(heads_dict, model_meta, model_cfg.pps_cfg)
     model = Model(dag, heads_with_pp)
     log.info('Model successfully prepared')
     return model
 
-def update_model_pps(model, pp_cfg):
+def update_model_pps(model, meta, pps_cfg):
     log.info('Overriding current post processors in the model')
     heads_dict = model.get_heads()
     log.info('Adding new Post Processors in Heads')
-    heads_with_pp = attach_pps(heads_dict, pp_cfg)
+    model_meta = meta.get_model_meta()
+    heads_with_pp = attach_pps(heads_dict, model_meta, pps_cfg)
     model.set_heads(heads_with_pp)
 
 class Model:
     def __init__(self, dag, heads_dict):
         self.dag = dag
         self.heads_dict = heads_dict
-        self.enable_pp = True
     
     def predict(self, x):
         self.to('cuda')
@@ -39,10 +39,18 @@ class Model:
     def logits(self, x):
         return self.dag(x)
     
-    def head_process(self, x, apply_pp=True, return_details=False):
-        for k, head in self.heads_dict.items():
-            x[k] = head.process(x[k], apply_pp, return_details)
-        return x
+    # need to be extra careful to not overwrite logits
+    def head_process(self, logits, apply_pp=True, return_details=False):
+        return {k: head.process(logits[k], apply_pp, return_details) for k, head in self.heads_dict.items()}
+    
+    def get_metrics_outs(self, outs):
+        return {k: head.get_metrics_out(outs[k]) for k, head in self.heads_dict.items()}
+    
+    def get_error_analysis_outs(self, outs):
+        return outs
+    
+    def get_final_outs(self, outs):
+        return {k: head.get_final_out(outs[k]) for k, head in self.heads_dict.items()}
     
     def are_pps_present(self):
         for head in self.heads_dict.values():
@@ -68,11 +76,9 @@ class Model:
         return self.dag.to(device)
     
     def eval(self):
-        self.enable_pp = True
         return self.dag.eval()
     
     def train(self):
-        self.enable_pp = False
         return self.dag.train()
     
     def state_dict(self):

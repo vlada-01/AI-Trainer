@@ -16,9 +16,9 @@ def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
     train, val, test, data_meta =  build_data(cfg)
     ctx_dict = {}
-    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', {'dl_cfg': cfg})
-    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', {'train': train, 'val': val, 'test': test})
-    ctx_dict = update_ctx_dict(ctx_dict, 'meta', {'data_meta': data_meta})
+    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', dl_cfg=cfg)
+    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', train=train, val=val, test=test)
+    ctx_dict = update_ctx_dict(ctx_dict, 'meta', data_meta=data_meta)
     results = {
         'sample_size': data_meta.get_necessary_sizes(),
         'input_keys': data_meta.get_input_keys()
@@ -32,9 +32,9 @@ def atomic_prepare_model(meta, cfg):
     log.info('Initializing prepare model process')
     model, model_meta = build_model(meta, cfg)
     ctx_dict = {}
-    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', {'model_cfg': cfg})
-    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', {'model': model})
-    ctx_dict = update_ctx_dict(ctx_dict, 'meta', {'model_meta': model_meta})
+    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', model_cfg=cfg)
+    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', model=model)
+    ctx_dict = update_ctx_dict(ctx_dict, 'meta', model_meta=model_meta)
     result = 'Model is successfully prepared'
     log.info('Prepare Model is successfully finished')
     return result, ctx_dict
@@ -43,9 +43,9 @@ def atomic_prepare_engine(model, train, val, test, meta, train_cfg):
     log.info('Initializing prepare engine manager process')
     engine, train_meta = prepare_engine(train_cfg, model, train, val, test, meta)
     ctx_dict = {}
-    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', {'train_cfg': train_cfg})
-    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', {'engine': engine})
-    ctx_dict = update_ctx_dict(ctx_dict, 'meta', {'train_meta': train_meta})
+    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', train_cfg=train_cfg)
+    ctx_dict = update_ctx_dict(ctx_dict, 'runtime', engine=engine)
+    ctx_dict = update_ctx_dict(ctx_dict, 'meta', train_meta=train_meta)
     result = 'Train Params are successfully prepared'
     log.info('Prepare engine manager process is successfully finished')    
     return result, ctx_dict
@@ -103,12 +103,12 @@ def atomic_prepare_default_from_run(meta, cfg, job_id):
     log.info('Prepare train with configurations from run is successfully finished')
     return result, ctx_dict
 
-def atomic_prepare_post_process(engine, cached_model_cfg, pps_cfg):
+def atomic_prepare_post_process(engine, meta, cached_model_cfg, pps_cfg):
     log.info('Initiazling post processsor process')
     
     log.info('Initializing post processor')
     model = engine.get_model()
-    update_model_pps(model, pps_cfg)
+    update_model_pps(model, meta, pps_cfg)
     cached_model_cfg.pps_cfg = pps_cfg
 
     log.info('Initializing training of post processor parameters')
@@ -122,7 +122,7 @@ def atomic_prepare_post_process(engine, cached_model_cfg, pps_cfg):
     return result, ctx_dict
 
 def update_ctx_dict(ctx_dict, key, **kwargs):
-    ctx_dict[key] = {ctx_dict[key], kwargs}
+    ctx_dict.setdefault(key, {}).update(kwargs)
     return ctx_dict
 
 def merge(ctx_dict1, ctx_dict2):

@@ -21,28 +21,28 @@ class Calibration(PostProcessor):
         optimizer = torch.optim.Adam([T], lr=0.01)
         loss_fn = torch.nn.CrossEntropyLoss()
 
-        prev_T = 1.0
-        patience = 2
-        streak = 0
-        eps = 1e-3
+        epochs = 5
+        prev_loss = None
+        eps = 1e-4
 
-        for _ in range(5):
+        for _ in range(epochs):
             optimizer.zero_grad()
+            loss = loss_fn(logits / T, targets)
+            
             loss.backward()
             optimizer.step()
 
-            loss = loss_fn(logits / T, targets)
+            curr_loss = loss.item()
+            if prev_loss is None:
+                prev_loss = curr_loss
+                continue
 
-            curr_T = float(T.item())
-            if abs(curr_T - prev_T) < eps:
-                streak += 1
-                if streak > patience:
-                    self.T = float(T.detach().cpu().item())
-                    log.info(f'Temperature converged earlier to {self.T}')
-                    return 
-            else:
-                streak = 0
-                prev_T = curr_T
+            diff = abs(prev_loss - curr_loss)
+            if diff < eps:
+                self.T = float(T.detach().cpu().item())
+                log.info(f'Temperature converged earlier to {self.T}')
+                return 
+            log.info(f'Abs differnece in prev and current loss: {diff}')
 
         self.T = float(T.detach().cpu().item())
         log.info(f'Learned temperature: {self.T}')
