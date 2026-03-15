@@ -1,13 +1,11 @@
 import os
 import asyncio
-import traceback
-from uuid import uuid4
-from datetime import datetime, timezone, timedelta
 
-from train_server.services.runs.run_ctx import RunContext
-from train_server.schemas.job_response import JobResponse, ErrorInfo
+from packages.server_lib.runs.job import Job, JobStatus
+from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
+from packages.server_lib.runs.run_ctx import RunContext
 
-from train_server.services.runs.state_manager import StateCode
+from train_server.schemas.job_response import ErrorInfo
 
 jobs_ttl = int(os.getenv("JOBS_TTL", "7200"))
 
@@ -15,63 +13,35 @@ from packages.logger.logger import get_logger
 
 log = get_logger(__name__)
 
-async def try_create_job(ctx: RunContext, state_code: StateCode) -> JobResponse:
+async def try_create_job(ctx: RunContext, state_code: StateCode) -> Job:
     if not await ctx.is_valid_to_add(state_code): 
         raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
-    job_id = uuid4().hex
-    job = JobResponse(
-        id=job_id,
-        job_type = state_code,
-        status='pending',
-        created_at=datetime.now(timezone.utc).isoformat(),
-        expires_at=(datetime.now(timezone.utc) + timedelta(seconds=jobs_ttl)).isoformat()
-    )
-
-    async with ctx.run_ctx_lock:
-        ctx.jobs[job.id] = job
-
+    
+    job = Job(state_code)
+    await ctx.add_job(job)
     return job
 
 async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
-    await update_job(ctx, job_id, status='in_progress')
+    await ctx.update_job(job_id, status=JobStatus.in_progress)
     try:
         result, ctx_dict = await asyncio.to_thread(task_fn, *params)
         await ctx.update(ctx_dict)
 
         await ctx.move_state(job_id)
-        await update_job(
-            ctx,
-            job_id,
-            status="success",
-            status_details=result
-        )
+        await ctx.update_job(job_id, status=JobStatus.success, status_details=result)
     except Exception as e:
-        print(traceback.format_exc())
-        await update_job(
-            ctx,
+        await ctx.update_job(
             job_id,
-            status="failed",
-            status_details="",
-            error=ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e),
-                # traceback=traceback.format_exc().splitlines()
-            )
+            status=JobStatus.failed,
+            status_details={
+                'error': ErrorInfo(
+                    error_type=type(e).__name__,
+                    error_message=str(e)
+                )
+            }
         )
 
-async def get_job(ctx: RunContext, job_id: str) -> JobResponse:
-    async with ctx.run_ctx_lock:
-        job = ctx.jobs[job_id]
-        if job is None:
-            raise RuntimeError(f'Job with id: ({job_id}) does not exist in the run_ctx with id: ({ctx.run_id})')
-        return job
-    
-async def update_job(ctx: RunContext, job_id, **kwargs) -> bool:
-    async with ctx.run_ctx_lock:
-        job = ctx.jobs[job_id]
-        if not job:
-            log.error(f'There is no job for updating with id: {job_id}')
-            return False
-        ctx.jobs[job_id] = job.model_copy(update=kwargs)
-        return True
+async def get_job(ctx: RunContext, job_id: str) -> Job:
+    return await ctx.get_job(job_id)
+
 

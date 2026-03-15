@@ -10,6 +10,7 @@ log = get_logger(__name__)
 def prepare_losses(loss_fns_cfg):
     log.info('Initializing Losses')
     loss_fns = {}
+    loss_ws = {}
     for k, loss_fn in loss_fns_cfg.items():
         weight = loss_fn.weight
         fn = loss_fn.fn
@@ -27,27 +28,45 @@ def prepare_losses(loss_fns_cfg):
             else:
                 log.warning(f'{k} will be ignored for {nn.__name__}.{fn.type}')
 
-        loss_fns[k] = {
-            'fn': callable(**kwargs),
-            'w': weight
-        }
+        loss_fns[k] = callable(**kwargs)
+        loss_ws[k] = weight
+
     log.debug(f'Initializing LossesManager with losses:\n%s', pformat(loss_fns))
     losses = LossesManager(loss_fns)
     log.info('Losses successfully prepared')
     return losses
 
 class LossesManager:
-    def __init__(self, loss_fns):
+    def __init__(self, loss_fns, loss_ws):
         self.loss_fns = loss_fns
-    
-    #TODO: maybe add losses per head
-    def calculate_total_loss(self, logits, targets):
+        self.loss_ws = loss_ws
+        self.h_weighted_losses = dict()
+        self.h_raw_losses = dict()
+
+    def reset_losses(self):
+        self.h_weighted_losses = dict()
+        self.h_raw_losses = dict()
+
+    def update(self, logits, targets, detailed):
         total_loss = 0.0
-        for k, v in self.loss_fns.items():
+        for k in self.loss_fns.keys():
             curr_logits = logits[k]
             curr_targets = targets[k]
-            Li = v['fn'](curr_logits, curr_targets)
-            w = v['w']
-            total_loss = total_loss + Li * w
-        
+
+            h_loss = self.loss_fns[k](curr_logits, curr_targets)
+            h_w = self.loss_ws[k]
+            if detailed:
+                self.h_raw_losses[k] += h_loss
+                self.h_weighted_losses[k] += h_loss * h_w
+
+            total_loss += h_loss * h_w
         return total_loss
+    
+    def collect_losses(self):
+        total_loss = sum([l for l in self.h_weighted_losses.values()])
+        results = {
+            'h_raw_losses': {k: v.item() for k, v in self.h_raw_losses.items()},
+            'h_losses': {k: v.item() for k, v in self.h_weighted_losses.items()},
+            'total_loss': total_loss.item()
+            }
+        return results

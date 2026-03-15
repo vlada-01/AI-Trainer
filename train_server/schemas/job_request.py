@@ -1,10 +1,10 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List, Union, Dict
+from typing import Optional, Dict
 
-from train_server.schemas.data import HuggingFaceConfig, DataTransforms, DataMetaCfg
-from train_server.schemas.models import ModelCfg, ModelMetaCfg
-from train_server.schemas.train import OptimizerConfig, LrDecay, LossFnCfg, Metrics
-from train_server.schemas.models import PPCfg
+from packages.train_lib.schemas.data import HuggingFaceConfig, DataTransforms, DataMetaCfg
+from packages.train_lib.schemas.models import ModelCfg, ModelMetaCfg
+from packages.train_lib.schemas.train import OptimizerConfig, LrDecay, LossFnCfg, Metrics
+from packages.train_lib.schemas.models import PPCfg
 # from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
 
 class PrepareDatasetJobRequest(BaseModel):

@@ -4,15 +4,12 @@ import traceback
 
 import train_server.schemas.job_request as requests
 from train_server.schemas.job_response import JobResponse, ErrorInfo
-
-from train_server.services.runs.state_manager import StateCode
-
 from train_server.services.jobs.tasks.train import atomic_train_model
 from train_server.services.jobs.tasks.final_evaluation import atomic_final_eval
-
 from train_server.services.jobs.jobs import try_create_job, get_job, start_job
+from train_server.services.runs import get_run
 
-from train_server.services.runs.runs import get_run
+from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
 
 from packages.logger.logger import get_logger
 
@@ -31,9 +28,9 @@ async def train_model(request: Request, run_id: str, data: requests.StartTrainJo
         params = await run.get_train_params() + (data, job.id)
         fn = atomic_train_model
         asyncio.create_task(start_job(run, job.id, fn, params))
-        return job
+        return JobResponse(**job.to_dict())
     except Exception as e:
-            print(traceback.format_exc())
+            log.critical(traceback.format_exc())
             raise  HTTPException(
                 status_code=500,
                 detail=ErrorInfo(
@@ -51,9 +48,9 @@ async def final_evaluation(request: Request, run_id: str, data: requests.FinalEv
         params = await run.get_final_eval_params() + (data, job.id)
         fn = atomic_final_eval
         asyncio.create_task(start_job(run, job.id, fn, params))
-        return job
+        return JobResponse(**job.to_dict())
     except Exception as e:
-        print(traceback.format_exc())
+        log.critical(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
             detail=ErrorInfo(
@@ -68,9 +65,9 @@ async def job_status(request: Request, run_id: str, job_id: str):
         ctx = request.app.state.ctx
         run = await get_run(ctx, run_id)
         job = await get_job(run, job_id)
-        return job
+        return JobResponse(**job.to_dict())
     except Exception as e:
-        print(traceback.format_exc())
+        log.critical(traceback.format_exc())
         raise  HTTPException(
             status_code=404,
             detail=ErrorInfo(

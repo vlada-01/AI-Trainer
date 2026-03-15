@@ -1,18 +1,22 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Any
 
-from train_server.services.runs.state_manager import StateCode
+from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
+from packages.server_lib.runs.job import JobStatus
 
 class ErrorInfo(BaseModel):
     error_type: str
     error_message: str
-    traceback: Optional[Any] = None
 
 class JobResponse(BaseModel):
     id: str
     job_type: StateCode
-    status: Literal['pending', 'in_progress', 'success', 'failed']
+    status: Literal[
+        JobStatus.pending,
+        JobStatus.in_progress,
+        JobStatus.success,
+        JobStatus.failed
+    ]
     status_details: Optional[Any] = None
-    error: Optional[ErrorInfo] = None
     created_at: str
     expires_at: str

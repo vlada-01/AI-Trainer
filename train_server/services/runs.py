@@ -1,6 +1,6 @@
 from train_server.app_ctx import AppContext
 
-from train_server.services.runs.run_ctx import RunContext
+from packages.server_lib.runs.run_ctx import RunContext, create_run_ctx
 
 from train_server.schemas.runs import NewRunCfg
 
@@ -9,10 +9,10 @@ from packages.logger.logger import get_logger
 log = get_logger(__name__)
 
 async def create_run(ctx: AppContext, data: NewRunCfg) -> RunContext:
-    run = RunContext(data.run_type, data.specs)
+    run_ctx = create_run_ctx(data)
     async with ctx.runs_lock:
-        ctx.runs[run.run_id] = run
-    return run
+        ctx.runs[run_ctx.run_id] = run_ctx
+    return run_ctx
 
 async def get_run(ctx: AppContext, run_id: str) -> RunContext:
     async with ctx.runs_lock:

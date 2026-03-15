@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from typing import List, Dict, Literal, Union
+from typing import List, Dict, Literal, Union, Optional
 
 from train_server.schemas.job_response import ErrorInfo, JobResponse
 
-from train_server.services.runs.state_manager import AvailableRunTypes
+from packages.server_lib.runs.run_ctx import AvailableRunTypes
 from packages.train_lib.tasks import AvailableTasks
 
 class RunCtxResponse(BaseModel):
@@ -25,4 +25,4 @@ class SpecsCfg(BaseModel):
 
 class NewRunCfg(BaseModel):
     specs: Dict[str, SpecsCfg]
-    run_type: AvailableRunTypes
+    run_type: Optional[AvailableRunTypes] = None

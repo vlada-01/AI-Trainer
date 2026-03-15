@@ -3,8 +3,8 @@ from typing import Literal, Union, List, Dict, Any
 
 from packages.train_lib.prepare_train.metrics.metric import AvailableMetrics
 
-from train_server.schemas.data import TransformStep
-from train_server.schemas.models import Layers
+from packages.train_lib.schemas.data import TransformStep
+from packages.train_lib.schemas.models import Layers
 
 
 #----------------------------------

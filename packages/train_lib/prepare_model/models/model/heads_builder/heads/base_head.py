@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-# FIXME: consider updating this as abstract class because there are functions required from model
-class Head:
+
+class Head(ABC):
     def __init__(self, task):
         self.task = task
         self.pps_chain = None

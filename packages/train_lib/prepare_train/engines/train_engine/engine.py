@@ -56,19 +56,20 @@ class TrainEngine:
 
     def train_epochs(self, model, train, val, writer):
         model.to(self.device)
-        model.train()
         for ep in range(self.epochs):
             log.info(f'Current Epoch: {ep}')
             self.train_epoch(model, train)
 
             log.info(f'Logging validation metrics for the epoch: {ep}')
-            results = self.eval_epoch(model, val)
-            writer.log_metrics(results, 'validation', ep)
+            metrics_results, losses_results = self.eval_epoch(model, val)
+            writer.log_metrics(metrics_results, 'validation', ep)
+            writer.log_losses(losses_results, 'validation', ep)
 
             if self.log_train_metrics:
                 log.info(f'Logging train metrics for the epoch: {ep}')
-                results = self.eval_epoch(model, train)
-                writer.log_metrics(results, 'train', ep)
+                metrics_results, losses_results = self.eval_epoch(model, train)
+                writer.log_metrics(metrics_results, 'train', ep)
+                writer.log_losses(losses_results, 'validation', ep)
            
             # TODO: does not work if the scheduler requires loss
             # does not work if the scheduler is batch based
@@ -88,8 +89,9 @@ class TrainEngine:
             X = {k: v.to(self.device) for k, v in X.items()}
             y = {k: v.to(self.device) for k, v in y.items()}
             for _ in range(self.num_of_iters):
+
                 logits = model.logits(X)
-                loss = self.losses.calculate_total_loss(logits, y)
+                loss = self.losses.update(logits, y, detailed=False)
 
                 loss.backward()
                 self.optimizer.step()
@@ -102,27 +104,28 @@ class TrainEngine:
     def eval_epoch(self, model, dl):
         size = len(dl.dataset)
 
-        total_loss = 0
+        self.losses.reset_losses()
         self.metrics.reset_metrics()
 
-        model.to(self.device)
         model.eval()
         with torch.no_grad():
             for i, (batch, indices) in enumerate(dl):
                 X, y = batch['X'], batch['y']
                 X = {k: v.to(self.device) for k, v in X.items()}
                 y = {k: v.to(self.device) for k, v in y.items()}
+                
                 logits = model.logits(X)
                 h_outs = model.head_process(logits, apply_pp=False)
 
-                total_loss += self.losses.calculate_total_loss(logits, y).item()
+                loss = self.losses.update(logits, y, detailed=True)
                 
                 metrics_outs = model.get_metrics_outs(h_outs)
                 self.metrics.update_metrics(metrics_outs, y)
                 
                 if i % 100 == 0:
-                    current = (i + 1) * len(indices)
-                    log.info(f"loss: {total_loss:>7f}  [{current:>5d}/{size:>5d}]")
+                    loss, current = loss.item(), (i + 1) * len(indices)
+                    log.info(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
+        losses_results = self.losses.collect_losses()
         metrics_results = self.metrics.collect_results()
-        return metrics_results
+        return metrics_results, losses_results

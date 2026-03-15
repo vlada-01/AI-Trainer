@@ -12,6 +12,7 @@ from packages.logger.logger import get_logger
 log = get_logger(__name__)
 
 # TODO: Need to test All transformation types
+# FIXME:need to update transformations so that each head can be independent
 def atomic_prepare_dataset(cfg):
     log.info('Initializing prepare dataset process')
     train, val, test, data_meta =  build_data(cfg)

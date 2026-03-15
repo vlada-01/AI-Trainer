@@ -1,50 +1,67 @@
 import os
 import asyncio
 from dataclasses import dataclass
-from torch.utils.data import DataLoader
 from uuid import uuid4
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from enum import Enum
 
-from train_server.schemas.job_response import JobResponse
 import train_server.schemas.job_request as requests
 
+from torch.utils.data import DataLoader
 from packages.train_lib.prepare_model.models.model.model import Model 
 from packages.train_lib.prepare_train.engines.engine_manager import EngineManager
-
 from packages.train_lib.meta import Meta
 
-from train_server.services.runs.state_manager import AvailableRunTypes, get_state_mappings, StateCode
+from packages.server_lib.runs.state_mgrs.state_mgr import StateManager
+from packages.server_lib.runs.state_mgrs.builder import create_state_mgr
+from packages.server_lib.runs.job_mgr import JobManager, create_job_mgr
+
+from packages.logger.logger import get_logger
+
+log = get_logger(__name__)
 
 runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
 cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
 
 @dataclass
 class RunTime:
-    train: Optional[DataLoader] = None
-    val: Optional[DataLoader] = None
-    test: Optional[DataLoader] = None
-    model: Optional[Model] = None
-    engine: Optional[EngineManager] = None
-    mlflow_run_id: Optional[str] = None
+    train: DataLoader = None
+    val: DataLoader = None
+    test: DataLoader = None
+    model: Model = None
+    engine: EngineManager = None
+    mlflow_run_id: str = None
 
 @dataclass
 class Configs:
-    dl_cfg: Optional[requests.PrepareDatasetJobRequest] = None
-    model_cfg: Optional[requests.PrepareModelJobRequest] = None
-    train_cfg: Optional[requests.PrepareTrainJobRequest] = None
+    dl_cfg: requests.PrepareDatasetJobRequest = None
+    model_cfg: requests.PrepareModelJobRequest = None
+    train_cfg: requests.PrepareTrainJobRequest = None
+
+class AvailableRunTypes(Enum):
+    base = 'base'
+    fine_tune = 'fine_tune'
+    post_process = 'post_process'
+    final_evaluation = 'final_evaluation'
+
+def create_run_ctx(run_cfg):
+    run_type = run_cfg.run_type
+    specs = run_cfg.specs
+    log.info(f'Initializing new RunContext for type: {run_type}')
+    run_ctx = RunContext(run_type, specs)
+    return run_ctx
 
 class RunContext:
     def __init__(self, run_type, specs):
         self.run_type: AvailableRunTypes = run_type
-        self.state_mapping = get_state_mappings(run_type)
-        self.run_id: str = uuid4().hex
-        self.state: StateCode = StateCode.draft
+        self.run_id = uuid4().hex
         now = datetime.now(timezone.utc)
-        self.created_at: str = now
-        self.updated_at: str = now
+        self.created_at = now
+        self.updated_at = now
 
-        self.jobs: Dict[str, JobResponse] = {}
+        self.state_mgr: StateManager = create_state_mgr(run_type)
+
+        self.job_mgr: JobManager = create_job_mgr()
         self.run_ctx_lock: asyncio.Lock = asyncio.Lock()
         
         self.cleanup_jobs_interval = cleanup_jobs_interval
@@ -58,21 +75,37 @@ class RunContext:
     # TODO: add meta data
     async def get_info(self):
         async with self.run_ctx_lock:
-            jobs = [v for v in self.jobs.values()]
             kwargs = {
                 'run_id': self.run_id,
                 'run_type': self.run_type,
-                'state': self.state.name,
+                'state': self.state_mgr.curr_state,
                 # 'required_steps': self.required_steps,
-                'jobs': jobs,
+                'jobs': [j.to_dict() for j in self.job_mgr.get_jobs()],
                 'created_at': self.created_at.isoformat(),
                 'updated_at': self.updated_at.isoformat(),
             }
             return kwargs
 
-    async def is_valid_to_add(self, status_code):
+    async def is_valid_to_add(self, state_code):
         async with self.run_ctx_lock:
-            return status_code in self.state_mapping[self.state] 
+            return self.state_mgr.is_valid_state(state_code)
+        
+    async def move_state(self, job_id):
+        async with self.run_ctx_lock:
+            job = self.job_mgr.get_job(job_id)
+            self.state_mgr.move_state(job.job_type)
+
+    async def add_job(self, job):
+        async with self.run_ctx_lock:
+            self.job_mgr.add_job(job)
+
+    async def update_job(self, job_id, **kwargs):
+        async with self.run_ctx_lock:
+            self.job_mgr.update_job(job_id, **kwargs)
+    
+    async def get_job(self, job_id):
+        async with self.run_ctx_lock:
+            return self.job_mgr.get_job(job_id)
 
     async def update(self, result):
         async with self.run_ctx_lock:
@@ -85,11 +118,6 @@ class RunContext:
                         setattr(obj, attr, v)
                         
             self.updated_at = datetime.now(timezone.utc)
-
-    async def move_state(self, job_id):
-        async with self.run_ctx_lock:
-            job = self.jobs[job_id]
-            self.state = job.job_type
 
     async def get_prepare_model_params(self):
         async with self.run_ctx_lock:
@@ -145,27 +173,18 @@ class RunContext:
     
     async def is_cleanable(self):
         async with self.run_ctx_lock:
-            finished = self.state in (StateCode.done, StateCode.failed)
-            still_running = self.state in (StateCode.training, StateCode.final_eval)
-
+            finished = self.state_mgr.is_finished()
+            is_running = self.state_mgr.is_running()
             now = datetime.now(timezone.utc)
-            update_check = (now - self.updated_at) > runs_inactivity
+            is_inactive = (now - self.updated_at) > runs_inactivity
             
-            return finished or (not still_running and update_check)
+            return finished or (not is_running and is_inactive)
 
     async def cleanup_task_loop(self):
         while True:
             await asyncio.sleep(self.cleanup_jobs_interval)
-            now = datetime.now(timezone.utc)
-
             async with self.run_ctx_lock:
-                expired_ids = [
-                    job_id
-                    for job_id, job in self.jobs.items()
-                    if (job.expires_at and datetime.fromisoformat(job.expires_at) <= now)
-                ]
-                for job_id in expired_ids:
-                    del self.jobs[job_id]
+                self.job_mgr.remove_jobs()
 
     async def cancel_cleanup_task(self):
         t = getattr(self, "cleanup_task", None)

@@ -34,8 +34,9 @@ def atomic_final_eval(engine, parent_id, meta, cfgs, data, job_id):
             model = engine.get_model()
             w.log_model_state(model.state_dict(), rel_path='model/model.pt')
             log.info('Initializing test evaluation')
-            metrics_results = engine.evaluate_test(w)
+            metrics_results, losses_results = engine.evaluate_test(w)
         writer.log_metrics(metrics_results, prefix='test')
+        writer.log_losses(losses_results, prefix='test')
 
         parent_url = f'{mlflow_public_uri}/#/experiments/{exp_id}/runs/{parent_id}'
         writer.set_tags({'Parent url': parent_url})

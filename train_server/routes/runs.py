@@ -2,7 +2,7 @@ import traceback
 from fastapi import APIRouter, Request, HTTPException
 
 from train_server.schemas.runs import NewRunCfg, RunCtxResponse, ErrorInfo
-from train_server.services.runs.runs import create_run, get_run
+from train_server.services.runs import create_run, get_run
 
 from train_server.routes.runs_routes.exec_jobs import router as exec_router
 from train_server.routes.runs_routes.prepare_jobs import router as prepare_router
