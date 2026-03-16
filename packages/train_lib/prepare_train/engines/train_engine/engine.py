@@ -40,7 +40,7 @@ class TrainEngine:
     def train_pp(self, model, val):
         if not model.are_pps_present():
             log.info('Post Processors are not present, skipping pp train')
-            return
+            return None
         model.to(self.device)
         model.eval()
         for batch, _ in val:
@@ -52,7 +52,7 @@ class TrainEngine:
 
             model.collect_samples(logits, y)
 
-        model.fit_pps()
+        return model.fit_pps()
 
     def train_epochs(self, model, train, val, writer):
         model.to(self.device)

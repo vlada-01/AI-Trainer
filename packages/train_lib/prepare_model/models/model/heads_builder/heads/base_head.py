@@ -18,7 +18,7 @@ class Head(ABC):
         self.pps_chain.collect_samples(logits, targets)
 
     def fit_pps(self):
-        self.pps_chain.fit_pps()
+        return self.pps_chain.fit_pps()
 
     @abstractmethod
     def process(self, logits, apply_pp, return_details):

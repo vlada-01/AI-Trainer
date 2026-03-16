@@ -1,7 +1,7 @@
 from packages.train_lib.prepare_data.data_builder import build_data
 from packages.train_lib.prepare_model.model_builder import build_model
 from packages.train_lib.prepare_train.train_builder import prepare_engine
-from packages.train_lib.prepare_model.models.model.model import update_model_pps
+from packages.train_lib.prepare_model.models.model.model import update_model_pps, update_pps_cfg
 
 import train_server.schemas.job_request as requests
 
@@ -113,11 +113,13 @@ def atomic_prepare_post_process(engine, meta, cached_model_cfg, pps_cfg):
     cached_model_cfg.pps_cfg = pps_cfg
 
     log.info('Initializing training of post processor parameters')
-    engine.train_pp()
+    pps_cfg_update = engine.train_pp()
+    updated_pps_cfg = update_pps_cfg(pps_cfg, pps_cfg_update)
+    cached_model_cfg.pps_cfg = updated_pps_cfg
 
     result = 'Post Processor is successfully prepared'
     ctx_dict = {}
-    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', {'model_cfg': cached_model_cfg})
+    ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', model_cfg=cached_model_cfg)
 
     log.info('Post processor process is successfully finished')
     return result, ctx_dict

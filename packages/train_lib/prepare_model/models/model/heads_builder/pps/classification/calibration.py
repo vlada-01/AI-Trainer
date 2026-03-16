@@ -1,5 +1,6 @@
 import torch
 
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import AvailablePostProcessors
 from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import PostProcessor
 
 from packages.logger.logger import get_logger
@@ -8,7 +9,7 @@ log = get_logger(__name__)
 
 class Calibration(PostProcessor):
     def __init__(self, T=None):
-        super().__init__(name='calibration',
+        super().__init__(name=AvailablePostProcessors.calibration,
                          in_key='logits',
                          out_key='logits',
                          fallback_key='logits',
@@ -46,6 +47,7 @@ class Calibration(PostProcessor):
 
         self.T = float(T.detach().cpu().item())
         log.info(f'Learned temperature: {self.T}')
+        return {'T': self.T}
 
 
     def process(self, state, return_details):

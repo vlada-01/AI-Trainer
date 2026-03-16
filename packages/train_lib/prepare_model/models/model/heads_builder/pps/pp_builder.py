@@ -1,21 +1,14 @@
-from enum import Enum
 from pprint import pformat
 import torch
 
 from packages.train_lib.tasks import AvailableTasks
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import AvailablePostProcessors
 from packages.train_lib.prepare_model.models.model.heads_builder.pps.classification.calibration import Calibration
 from packages.train_lib.prepare_model.models.model.heads_builder.pps.classification.global_threshold import GlobalThreshold
 
 from packages.logger.logger import get_logger
 
 log = get_logger(__name__)
-
-UNKNOWN_CLASS = -1
-
-class AvailablePostProcessors(str, Enum):
-    #for classification
-    calibration = 'calibration'
-    global_threshold = 'global_threshold'
 
 
 PP_REGISTRY_MAP = {
@@ -90,6 +83,7 @@ class PostProcessorChain:
         self.targets_buf.append(targets.detach().cpu())
         
     def fit_pps(self):
+        for_update = {}
         state_buf = {k: torch.cat(v) for k, v in self.state_buf.items()}
         targets = torch.cat(self.targets_buf)
         for pp in self.pps:
@@ -99,8 +93,10 @@ class PostProcessorChain:
                 if in_key not in self.state_buf:
                     self.try_fallback(pp, state_buf)
                     
-                pp.train(state_buf, targets)
+                result = pp.train(state_buf, targets)
+                for_update[pp.name] = result
                 state_buf, _ = pp.process(state_buf, False)
+        return for_update
 
 
 

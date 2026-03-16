@@ -24,6 +24,16 @@ def update_model_pps(model, meta, pps_cfg):
     heads_with_pp = attach_pps(heads_dict, model_meta, pps_cfg)
     model.set_heads(heads_with_pp)
 
+def update_pps_cfg(pps_cfg, pps_cfg_update):
+    pps_cfg_update = pps_cfg_update or {}
+    for k, v in pps_cfg_update.items():
+        curr_pps_cfg = pps_cfg[k]
+        for pp_cfg in curr_pps_cfg:
+            pp_type = pp_cfg.type
+            pp_cfg.model_copy(update=v[pp_type])
+    return pps_cfg
+
+
 class Model:
     def __init__(self, dag, heads_dict):
         self.dag = dag
@@ -63,8 +73,7 @@ class Model:
             head.collect_samples(logits[k], targets[k])
     
     def fit_pps(self):
-        for head in self.heads_dict.values():
-            head.fit_pps()
+        return {k: head.fit_pps() for k, head in self.heads_dict.items()}
     
     def get_model(self):
         return self.dag

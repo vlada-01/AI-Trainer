@@ -1,6 +1,7 @@
 import mlflow
 
 from packages.mlflow_logger.writer import MlflowWriter
+from packages.train_lib.prepare_model.models.model.model import update_pps_cfg
 
 from packages.logger.logger import get_logger
 
@@ -25,8 +26,9 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
         engine.train_model(writer)
 
         log.info('Initializing Post Processor train')
-        engine.train_pp()
-
+        pps_cfg_update = engine.train_pp()
+        updated_pps_cfg = update_pps_cfg(cfgs.model_cfg.pps_cfg, pps_cfg_update)
+        cfgs.model_cfg.pps_cfg = updated_pps_cfg
         
         with writer.open_artifact_writer() as w:
             w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')

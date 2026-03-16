@@ -1,4 +1,10 @@
+from enum import Enum
 from abc import ABC, abstractmethod
+
+class AvailablePostProcessors(str, Enum):
+    #for classification
+    calibration = 'calibration'
+    global_threshold = 'global_threshold'
 
 class PostProcessor(ABC):
     def __init__(self, name, in_key, out_key, fallback_key, trainable=False):

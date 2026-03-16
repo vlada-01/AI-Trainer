@@ -1,5 +1,6 @@
 import torch
 
+from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import AvailablePostProcessors
 from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import PostProcessor
 
 from packages.logger.logger import get_logger
@@ -8,7 +9,7 @@ log = get_logger(__name__)
 
 class GlobalThreshold(PostProcessor):
     def __init__(self, accuracy, threshold=None):
-        super().__init__(name='global_threshold',
+        super().__init__(name=AvailablePostProcessors.global_threshold,
                          in_key='probs',
                          out_key='preds',
                          fallback_key='logits',
@@ -41,6 +42,7 @@ class GlobalThreshold(PostProcessor):
         accepted = val_conf >= self.threshold
         coverage = accepted.float().mean().item()
         log.info(f'Coverage: {coverage}')
+        return {'threshold': self.threshold}
 
     def process(self, state, return_details):
         probs = state[self.in_key]
