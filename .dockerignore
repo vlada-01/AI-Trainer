@@ -21,3 +21,5 @@ tmp
 
 *.log
 *.sqlite
+
+*.egg-info/

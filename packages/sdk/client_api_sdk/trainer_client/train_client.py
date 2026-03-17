@@ -1,11 +1,9 @@
 import yaml
 import requests
 
-from packages.sdk.client_api_sdk.trainer_client.run_client import RunClient
+from .run_client import RunClient
 
-from train_server.schemas.runs import NewRunCfg
-import train_server.schemas.job_request as request
-
+# TODO: this client shall handle exceptions from server appropriately and do something with that
 class TrainerClient:
     def __init__(self, server_url=None):
         self.server_url = server_url or 'http://localhost:8000'
@@ -23,28 +21,28 @@ class TrainerClient:
         return self.run_client.get_info(info_url)
 
     @staticmethod
-    def load_cfg(file_path, cls):
+    def load_cfg(file_path):
         with open(file_path, 'r') as f:
-            return cls(**yaml.safe_load(f))
+            return yaml.safe_load(f)
 
     # can run fail in init
     def start_run(self, file_path):
-        run_cfg = self.load_cfg(file_path, NewRunCfg)
+        run_cfg = self.load_cfg(file_path)
         run_url = f'{self.server_url}/runs'
         return self.run_client.start_run(url=run_url, payload=run_cfg)
 
     def prepare_dataset(self, run_id, file_path):
-        dataset_cfg = self.load_cfg(file_path, request.PrepareDatasetJobRequest)
+        dataset_cfg = self.load_cfg(file_path)
         data_url = f'{self.server_url}/{run_id}/prepare-jobs/dataset'
         return self.run_client.request_job(run_id, url=data_url, payload=dataset_cfg)
 
     def prepare_model(self, run_id, file_path):
-        model_cfg = self.load_cfg(file_path, request.PrepareModelJobRequest)
+        model_cfg = self.load_cfg(file_path)
         model_url = f'{self.server_url}/{run_id}/prepare-jobs/model'
         return self.run_client.request_job(run_id, url=model_url, payload=model_cfg)
 
     def prepare_engine(self, run_id, file_path):
-        engine_cfg = self.load_cfg(file_path, request.PrepareTrainJobRequest)
+        engine_cfg = self.load_cfg(file_path)
         engine_url = f'{self.server_url}/{run_id}/prepare-jobs/engine'
         return self.run_client.request_job(run_id, url=engine_url, payload=engine_cfg)
     
@@ -56,9 +54,8 @@ class TrainerClient:
             'run_name': run_name,
             'model_name': model_name
         }
-        train_data = request.StartTrainJobRequest(**train_dict)
         train_url = f'{self.server_url}/{run_id}/exec-jobs/train'
-        return self.run_client.request_job(run_id, url=train_url, payload=train_data)
+        return self.run_client.request_job(run_id, url=train_url, payload=train_dict)
     
     def get_mlflow_history(self):
         mlflow_url = f'{self.server_url}/mlflow/history'

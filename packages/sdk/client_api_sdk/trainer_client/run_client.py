@@ -11,14 +11,14 @@ class RunClient:
         return response.json()
 
     def start_run(self, url, payload):
-        run = requests.post(url, json=payload.model_dump())
+        run = requests.post(url, json=payload)
         run.raise_for_status()
         run_id = run.json()['run_id']
         self.runs[run_id] = set()
         return run_id
     
     def request_job(self, run_id, url, payload):
-        job = requests.post(url, json=payload.model_dump())
+        job = requests.post(url, json=payload)
         job.raise_for_status()
         job_id = job.json['id']
         self.runs[run_id] = job_id
