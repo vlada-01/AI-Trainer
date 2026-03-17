@@ -8,7 +8,7 @@ class ErrorInfo(BaseModel):
     error_message: str
 
 class JobResponse(BaseModel):
-    id: str
+    job_id: str
     job_type: StateCode
     status: Literal[
         JobStatus.pending,

@@ -13,11 +13,11 @@ class TrainerClient:
         self.server_url = server_url
 
     def get_run_info(self, run_id):
-        info_url = f'{self.server_url}/{run_id}'
+        info_url = f'{self.server_url}/runs/{run_id}'
         return self.run_client.get_info(info_url)
     
     def get_job_info(self, run_id, job_id):
-        info_url = f'{self.server_url}/{run_id}/{job_id}'
+        info_url = f'{self.server_url}/runs/{run_id}/{job_id}'
         return self.run_client.get_info(info_url)
 
     @staticmethod
@@ -33,17 +33,17 @@ class TrainerClient:
 
     def prepare_dataset(self, run_id, file_path):
         dataset_cfg = self.load_cfg(file_path)
-        data_url = f'{self.server_url}/{run_id}/prepare-jobs/dataset'
+        data_url = f'{self.server_url}/runs/{run_id}/prepare-jobs/dataset'
         return self.run_client.request_job(run_id, url=data_url, payload=dataset_cfg)
 
     def prepare_model(self, run_id, file_path):
         model_cfg = self.load_cfg(file_path)
-        model_url = f'{self.server_url}/{run_id}/prepare-jobs/model'
+        model_url = f'{self.server_url}/runs/{run_id}/prepare-jobs/model'
         return self.run_client.request_job(run_id, url=model_url, payload=model_cfg)
 
     def prepare_engine(self, run_id, file_path):
         engine_cfg = self.load_cfg(file_path)
-        engine_url = f'{self.server_url}/{run_id}/prepare-jobs/engine'
+        engine_url = f'{self.server_url}/runs/{run_id}/prepare-jobs/engine'
         return self.run_client.request_job(run_id, url=engine_url, payload=engine_cfg)
     
     #FIXME: add post process, final eval, load run, load complete,
@@ -54,7 +54,7 @@ class TrainerClient:
             'run_name': run_name,
             'model_name': model_name
         }
-        train_url = f'{self.server_url}/{run_id}/exec-jobs/train'
+        train_url = f'{self.server_url}/runs/{run_id}/exec-jobs/train'
         return self.run_client.request_job(run_id, url=train_url, payload=train_dict)
     
     def get_mlflow_history(self):
@@ -78,7 +78,7 @@ class TrainerClient:
         return resp.json()
     
     def get_dataset_info(self, id, name=None):
-        ds_info_url = f'{self.server_url}/data-info'
+        ds_info_url = f'{self.server_url}/data-info/get-dataset-info'
         payload = {'id': id, 'name': name}
         resp = requests.post(ds_info_url, json=payload)
         resp.raise_for_status()

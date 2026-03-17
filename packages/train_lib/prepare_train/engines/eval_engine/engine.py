@@ -41,7 +41,7 @@ class EvaluationEngine:
                 logits = model.logits(X)
                 h_outs = model.head_process(logits, return_details)
                 
-                _ = self.losses.update(logits, y)
+                _ = self.losses.update(logits, y, detailed=True)
                 
                 metrics_outs = model.get_metrics_outs(h_outs)
                 self.metrics.update_metrics(metrics_outs, y)

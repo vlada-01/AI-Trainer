@@ -38,6 +38,6 @@ class Job:
             'job_type': self.state_code,
             'status': self.status,
             'status_details': self.status_details,
-            'created_at': self.created_at,
-            'expires_at': self.expires_at,
+            'created_at': self.created_at.isoformat(),
+            'expires_at': self.expires_at.isoformat(),
         }

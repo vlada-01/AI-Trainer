@@ -20,6 +20,6 @@ class RunClient:
     def request_job(self, run_id, url, payload):
         job = requests.post(url, json=payload)
         job.raise_for_status()
-        job_id = job.json['id']
+        job_id = job.json()['job_id']
         self.runs[run_id] = job_id
         return job_id

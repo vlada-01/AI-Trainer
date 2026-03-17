@@ -1,5 +1,6 @@
 import inspect
 import torch.nn as nn
+import torch
 from pprint import pformat
 
 from packages.logger import get_logger
@@ -32,7 +33,7 @@ def prepare_losses(loss_fns_cfg):
         loss_ws[k] = weight
 
     log.debug(f'Initializing LossesManager with losses:\n%s', pformat(loss_fns))
-    losses = LossesManager(loss_fns)
+    losses = LossesManager(loss_fns, loss_ws)
     log.info('Losses successfully prepared')
     return losses
 
@@ -56,8 +57,8 @@ class LossesManager:
             h_loss = self.loss_fns[k](curr_logits, curr_targets)
             h_w = self.loss_ws[k]
             if detailed:
-                self.h_raw_losses[k] += h_loss
-                self.h_weighted_losses[k] += h_loss * h_w
+                self.h_raw_losses[k] = self.h_raw_losses.get(k, 0.0) + h_loss
+                self.h_weighted_losses[k] = self.h_weighted_losses.get(k, 0.0) + h_loss * h_w
 
             total_loss += h_loss * h_w
         return total_loss

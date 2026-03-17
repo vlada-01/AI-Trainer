@@ -12,6 +12,9 @@ def build_model(meta, cfg):
     model_meta_cfg = cfg.model_meta_cfg
     model_meta = create_meta(model_meta_cfg)
     
+    specs_mapper = model_meta.specs_mapper
+    pps_cfg = {specs_mapper(k): v for k, v in cfg.model_cfg.pps_cfg.items()}
+    cfg.model_cfg.pps_cfg = pps_cfg
     model_cfg = cfg.model_cfg
     model = create_model(model_cfg, meta, model_meta)
     log.info('Model is prepared successfully')

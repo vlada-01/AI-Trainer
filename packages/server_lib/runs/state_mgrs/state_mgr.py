@@ -20,7 +20,8 @@ class StateManager:
         self.curr_state = StateCode.draft
     
     def is_valid_state(self, state_code):
-        return state_code in self.state[self.curr_state]
+        if state_code not in self.states[self.curr_state]:
+            raise RuntimeError(f'Cannot add job when run_ctx is in state: {self.curr_state}')
     
     def move_state(self, new_state_code):
         self.curr_state = new_state_code

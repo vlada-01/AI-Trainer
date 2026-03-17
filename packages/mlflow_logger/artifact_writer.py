@@ -45,7 +45,7 @@ class ArtifactWriter:
     
     def save_error_analysis_tables(self, error_analysis_dict: dict):
         p = self.root / 'error_analysis'
-        for k, pd_error_table in error_analysis_dict:
+        for k, pd_error_table in error_analysis_dict.items():
             p = p / k / 'error_table.csv'
             p.parent.mkdir(parents=True, exist_ok=True)
             pd_error_table.to_csv(p, mode='a', header=False, index=False)

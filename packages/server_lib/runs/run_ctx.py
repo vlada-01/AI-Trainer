@@ -4,9 +4,6 @@ from dataclasses import dataclass
 from uuid import uuid4
 from datetime import datetime, timezone
 
-# TODO: for deletion
-# import train_server.schemas.job_request as requests
-
 from torch.utils.data import DataLoader
 from packages.train_lib.prepare_model import Model 
 from packages.train_lib.prepare_train import EngineManager
@@ -84,12 +81,12 @@ class RunContext:
 
     async def is_valid_to_add(self, state_code):
         async with self.run_ctx_lock:
-            return self.state_mgr.is_valid_state(state_code)
+            self.state_mgr.is_valid_state(state_code)
         
     async def move_state(self, job_id):
         async with self.run_ctx_lock:
             job = self.job_mgr.get_job(job_id)
-            self.state_mgr.move_state(job.job_type)
+            self.state_mgr.move_state(job.state_code)
 
     async def add_job(self, job):
         async with self.run_ctx_lock:

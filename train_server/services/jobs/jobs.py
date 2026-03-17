@@ -1,5 +1,6 @@
 import os
 import asyncio
+import traceback
 
 from packages.server_lib.runs import Job, JobStatus
 from packages.server_lib.runs import StateCode
@@ -13,9 +14,10 @@ from packages.logger import get_logger
 
 log = get_logger(__name__)
 
+# TODO: update this crap
+# introduce queue in job manager 
 async def try_create_job(ctx: RunContext, state_code: StateCode) -> Job:
-    if not await ctx.is_valid_to_add(state_code): 
-        raise RuntimeError(f'Cannot add job when run_ctx is in state: {ctx.state}')
+    await ctx.is_valid_to_add(state_code)
     
     job = Job(state_code)
     await ctx.add_job(job)
@@ -30,6 +32,7 @@ async def start_job(ctx: RunContext, job_id: str, task_fn, params) -> None:
         await ctx.move_state(job_id)
         await ctx.update_job(job_id, status=JobStatus.success, status_details=result)
     except Exception as e:
+        log.critical(traceback.format_exc())
         await ctx.update_job(
             job_id,
             status=JobStatus.failed,

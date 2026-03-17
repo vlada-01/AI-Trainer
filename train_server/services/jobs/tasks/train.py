@@ -27,8 +27,8 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
 
         log.info('Initializing Post Processor train')
         pps_cfg_update = engine.train_pp()
-        updated_pps_cfg = update_pps_cfg(cfgs.model_cfg.pps_cfg, pps_cfg_update)
-        cfgs.model_cfg.pps_cfg = updated_pps_cfg
+        updated_pps_cfg = update_pps_cfg(cfgs.model_cfg.model_cfg.pps_cfg, pps_cfg_update)
+        cfgs.model_cfg.model_cfg.pps_cfg = updated_pps_cfg
         
         with writer.open_artifact_writer() as w:
             w.log_cfg(cfgs.dl_cfg.model_dump(), rel_path='cfgs/dataset_cfg.json')
@@ -39,8 +39,9 @@ def atomic_train_model(engine, meta, cfgs, data, job_id):
             model = engine.get_model()
             w.log_model_state(model.state_dict(), rel_path='model/model.pt')
             log.info('Initializing validation set evaluation')
-            metrics_results = engine.evaluate_val(w)
+            metrics_results, losses_results = engine.evaluate_val(w)
         writer.log_metrics(metrics_results, 'validation')
+        writer.log_losses(losses_results, 'validation')
 
     mlflow.end_run()
     result = 'Training is finished successfully'

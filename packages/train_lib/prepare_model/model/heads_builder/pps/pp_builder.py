@@ -19,12 +19,10 @@ PP_REGISTRY_MAP = {
     },
 }
 
-def attach_pps(heads, model_meta, pps_cfg):
+def attach_pps(heads, pps_cfg):
     log.debug('Initializing post processor builder for cfg:\n%s', pformat(pps_cfg))
     if not pps_cfg:
         return heads
-    specs_mapper = model_meta.specs_mapper
-    pps_cfg = {specs_mapper(k): v for k, v in pps_cfg.items()}
     for k, head in heads.items():
         pps_list = pps_cfg[k]
         log.info(f'Adding PostProcessorChain in Head: {k}')

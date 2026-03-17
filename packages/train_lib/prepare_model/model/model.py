@@ -11,7 +11,7 @@ def create_model(model_cfg, meta, model_meta):
     log.info('Initializing heads for Model')
     heads_dict = build_heads(meta)
     log.info('Adding Post Processors in Heads')
-    heads_with_pp = attach_pps(heads_dict, model_meta, model_cfg.pps_cfg)
+    heads_with_pp = attach_pps(heads_dict, model_cfg.pps_cfg)
     model = Model(dag, heads_with_pp)
     log.info('Model successfully prepared')
     return model

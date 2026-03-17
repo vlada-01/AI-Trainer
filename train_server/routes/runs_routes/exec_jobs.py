@@ -58,22 +58,22 @@ async def final_evaluation(request: Request, run_id: str, data: schemas.FinalEva
             )
         )
 
-@router.get('/{job_id}', response_model=schemas.JobResponse)
-async def job_status(request: Request, run_id: str, job_id: str):
-    try:
-        ctx = request.app.state.ctx
-        run = await get_run(ctx, run_id)
-        job = await get_job(run, job_id)
-        return schemas.JobResponse(**job.to_dict())
-    except Exception as e:
-        log.critical(traceback.format_exc())
-        raise  HTTPException(
-            status_code=404,
-            detail=schemas.ErrorInfo(
-                error_type=type(e).__name__,
-                error_message=str(e)
-            )
-        )
+# @router.get('/{job_id}', response_model=schemas.JobResponse)
+# async def job_status(request: Request, run_id: str, job_id: str):
+#     try:
+#         ctx = request.app.state.ctx
+#         run = await get_run(ctx, run_id)
+#         job = await get_job(run, job_id)
+#         return schemas.JobResponse(**job.to_dict())
+#     except Exception as e:
+#         log.critical(traceback.format_exc())
+#         raise  HTTPException(
+#             status_code=404,
+#             detail=schemas.ErrorInfo(
+#                 error_type=type(e).__name__,
+#                 error_message=str(e)
+#             )
+#         )
 
 # TODO: big problem for not being able to cancel task once it is started, for now all jobs are atomic
 # @router.delete('/{job_id}/cancel', response_model=JobResponse)

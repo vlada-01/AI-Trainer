@@ -1,8 +1,9 @@
 import traceback
 from fastapi import APIRouter, Request, HTTPException
 
-from train_server.schemas import NewRunCfg, RunCtxResponse, ErrorInfo
+from train_server.schemas import NewRunCfg, RunCtxResponse, ErrorInfo, JobResponse
 from train_server.services.runs import create_run, get_run
+from train_server.services.jobs.jobs import get_job
 
 from .runs_routes import exec_jobs_router, prepare_jobs_router
 
@@ -52,6 +53,24 @@ async def get_current_status(request: Request, run_id: str):
                 traceback=traceback.format_exc().splitlines()
             )
         )
+    
+@router.get('/{run_id}/{job_id}', response_model=JobResponse)
+async def job_status(request: Request, run_id: str, job_id: str):
+    try:
+        ctx = request.app.state.ctx
+        run = await get_run(ctx, run_id)
+        job = await get_job(run, job_id)
+        return JobResponse(**job.to_dict())
+    except Exception as e:
+        log.critical(traceback.format_exc())
+        raise  HTTPException(
+            status_code=404,
+            detail=ErrorInfo(
+                error_type=type(e).__name__,
+                error_message=str(e)
+            )
+        )
+
     
 # add endpoint for moving run with validation everything is done for that type
 
