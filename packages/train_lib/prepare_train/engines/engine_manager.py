@@ -1,5 +1,5 @@
-from . import prepare_train_engine, TrainEngine
-from . import prepare_eval_engine, EvaluationEngine
+from .train_engine.engine import prepare_train_engine, TrainEngine
+from .eval_engine.engine import prepare_eval_engine, EvaluationEngine
 
 from packages.logger import get_logger
 

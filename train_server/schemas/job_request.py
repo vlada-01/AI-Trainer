@@ -1,22 +1,18 @@
 from pydantic import BaseModel, model_validator
 from typing import Optional, Dict
 
-from packages.train_lib.schemas.data import HuggingFaceConfig, DataTransforms, DataMetaCfg
-from packages.train_lib.schemas.models import ModelCfg, ModelMetaCfg
-from packages.train_lib.schemas.train import OptimizerConfig, LrDecay, LossFnCfg, Metrics
-from packages.train_lib.schemas.models import PPCfg
-# from app_src.schemas.train import FtDatasetCfg, FtLayersCfg, FtTrainCfg
+import packages.train_lib.schemas as schemas
 
 class PrepareDatasetJobRequest(BaseModel):
-    data_config: HuggingFaceConfig
-    dataset_transforms: DataTransforms
+    data_config: schemas.HuggingFaceConfig
+    dataset_transforms: schemas.DataTransforms
     batch_size: Optional[int] = 1
     shuffle: Optional[bool] = False
-    data_meta_cfg: DataMetaCfg
+    data_meta_cfg: schemas.DataMetaCfg
 
 class PrepareModelJobRequest(BaseModel):
-    model_cfg: ModelCfg
-    model_meta_cfg: Optional[ModelMetaCfg] = None
+    model_cfg: schemas.ModelCfg
+    model_meta_cfg: Optional[schemas.ModelMetaCfg] = None
 
     @model_validator(mode='after')
     def validate_graph(self):
@@ -36,11 +32,11 @@ class PrepareTrainJobRequest(BaseModel):
     epochs: int
     num_of_iters: Optional[int] = 1
 
-    optimizer: OptimizerConfig
-    lr_decay: Optional[LrDecay] = None
-    loss_fns: Dict[str, LossFnCfg]
+    optimizer: schemas.OptimizerConfig
+    lr_decay: Optional[schemas.LrDecay] = None
+    loss_fns: Dict[str, schemas.LossFnCfg]
 
-    metrics: Dict[str, Metrics]
+    metrics: Dict[str, schemas.Metrics]
 
 class PrepareCompleteTrainJobRequest(BaseModel):
     dataset_cfg: PrepareDatasetJobRequest
@@ -57,7 +53,7 @@ class StartTrainJobRequest(BaseModel):
 
 class PreparePostProcessingJobRequest(BaseModel):
     new_run_name: str
-    post_processors: Dict[str, PPCfg]
+    post_processors: Dict[str, schemas.PPCfg]
 
 class FinalEvalJobRequest(BaseModel):
     exp_name: str

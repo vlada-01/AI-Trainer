@@ -1,8 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Any
 
-from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
-from packages.server_lib.runs.job import JobStatus
+from packages.server_lib.runs import StateCode, JobStatus
 
 class ErrorInfo(BaseModel):
     error_type: str

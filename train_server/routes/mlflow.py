@@ -1,8 +1,7 @@
 import traceback
 from fastapi import APIRouter, Request, HTTPException
 
-from train_server.schemas.mlflow import HistoryResponse, ResultsResponse, ExperimentRunsResponse
-from train_server.schemas.job_response import ErrorInfo
+import train_server.schemas as schemas
 
 from train_server.services.mlflow import get_experiments, get_run_results, get_runs, delete_run
 
@@ -12,56 +11,56 @@ log = get_logger(__name__)
 
 router = APIRouter(prefix="/mlflow", tags=["mlflow"])
 
-@router.get('/history', response_model=HistoryResponse)
+@router.get('/history', response_model=schemas.HistoryResponse)
 def get_history(request: Request):
     try:
         ctx = request.app.state.ctx
         client = ctx.mlflow_client
         list_of_exps = get_experiments(client)
-        return HistoryResponse(
+        return schemas.HistoryResponse(
             exps=list_of_exps
         )
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
-            detail=ErrorInfo(
+            detail=schemas.ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e)
             )
         )
 
-@router.get('/get-exp-runs/{exp_name}', response_model=ExperimentRunsResponse)
+@router.get('/get-exp-runs/{exp_name}', response_model=schemas.ExperimentRunsResponse)
 def get_exp_runs(request: Request, exp_name: str):
     try:
         ctx = request.app.state.ctx
         client = ctx.mlflow_client
         runs_list = get_runs(client, exp_name)
-        return ExperimentRunsResponse(
+        return schemas.ExperimentRunsResponse(
             runs=runs_list
         )
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
-            detail=ErrorInfo(
+            detail=schemas.ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e)
             )
         )
 
-@router.get('/{mlflow_run_id}', response_model=ResultsResponse)
+@router.get('/{mlflow_run_id}', response_model=schemas.ResultsResponse)
 def get_run_results(request: Request, mlflow_run_id: str):
     try:
         ctx = request.app.state.ctx
         client = ctx.mlflow_client
         results = get_run_results(client, mlflow_run_id)
-        return ResultsResponse(results=results)
+        return schemas.ResultsResponse(results=results)
     except Exception as e:
         print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
-            detail=ErrorInfo(
+            detail=schemas.ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e)
             )
@@ -78,7 +77,7 @@ def delete_mlflow_run(request: Request, mlflow_run_id: str):
         print(traceback.format_exc())
         raise  HTTPException(
             status_code=500,
-            detail=ErrorInfo(
+            detail=schemas.ErrorInfo(
                 error_type=type(e).__name__,
                 error_message=str(e)
             )

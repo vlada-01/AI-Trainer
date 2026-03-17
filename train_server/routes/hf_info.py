@@ -2,8 +2,7 @@ import traceback
 from fastapi import APIRouter, Request, HTTPException
 
 from train_server.services.hf_info import get_dataset_info
-from train_server.schemas.hf_info import DatasetInfoRequest, DatasetInfoResponse
-from train_server.schemas.job_response import ErrorInfo
+from train_server.schemas import DatasetInfoRequest, DatasetInfoResponse, ErrorInfo
 
 from packages.logger import get_logger
 

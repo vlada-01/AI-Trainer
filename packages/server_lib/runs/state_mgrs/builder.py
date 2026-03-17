@@ -1,4 +1,4 @@
-from packages.server_lib.runs import AvailableRunTypes
+from ..run_types import AvailableRunTypes
 
 from .base_run_mgr import BaseRunStateManager
 from .pp_run_mgr import PPRunStateManager

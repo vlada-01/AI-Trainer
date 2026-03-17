@@ -1,5 +1,5 @@
 from .state_mgr import StateManager, StateCode
-from packages.server_lib.runs.run_ctx import AvailableRunTypes
+from ..run_types import AvailableRunTypes
 
 class FineTuneStateManager(StateManager):
     def __init__(self):

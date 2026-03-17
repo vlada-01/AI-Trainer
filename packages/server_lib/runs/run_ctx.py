@@ -3,15 +3,16 @@ import asyncio
 from dataclasses import dataclass
 from uuid import uuid4
 from datetime import datetime, timezone
-from enum import Enum
 
-import train_server.schemas.job_request as requests
+# TODO: for deletion
+# import train_server.schemas.job_request as requests
 
 from torch.utils.data import DataLoader
-from packages.train_lib.prepare_model.models.model.model import Model 
-from packages.train_lib.prepare_train.engines.engine_manager import EngineManager
+from packages.train_lib.prepare_model import Model 
+from packages.train_lib.prepare_train import EngineManager
 from packages.train_lib.meta import Meta
 
+from .run_types import AvailableRunTypes
 from .state_mgrs import create_state_mgr, StateManager
 from .job_mgr import create_job_mgr, JobManager
 
@@ -22,11 +23,6 @@ log = get_logger(__name__)
 runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
 cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
 
-class AvailableRunTypes(Enum):
-    base = 'base'
-    fine_tune = 'fine_tune'
-    post_process = 'post_process'
-    final_evaluation = 'final_evaluation'
 
 def create_run_ctx(run_cfg):
     run_type = run_cfg.run_type
@@ -47,9 +43,9 @@ class RunTime:
 
 @dataclass
 class Configs:
-    dl_cfg: requests.PrepareDatasetJobRequest = None
-    model_cfg: requests.PrepareModelJobRequest = None
-    train_cfg: requests.PrepareTrainJobRequest = None
+    dl_cfg = None
+    model_cfg = None
+    train_cfg = None
 
 class RunContext:
     def __init__(self, run_type, specs):

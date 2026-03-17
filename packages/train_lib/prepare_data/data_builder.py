@@ -1,7 +1,7 @@
 from enum import Enum
 from torch.utils.data import DataLoader
 
-from .data_builder import HuggingFaceBuilder
+from .dataset_builders import HuggingFaceBuilder
 from .metas import create_meta
 
 from packages.logger import get_logger
