@@ -3,11 +3,11 @@ import torch.optim as opt
 import inspect
 from pprint import pformat
 
-from packages.train_lib.prepare_train.metrics.metrics_manager import prepare_metrics, MetricsManager
-from packages.train_lib.prepare_train.loss.loss_manager import prepare_losses, LossesManager
-from packages.train_lib.prepare_train.error_tables.error_analysis_manager import prepare_error_analysis, ErrorAnalysisManager
+from .metrics import prepare_metrics, MetricsManager
+from .loss import prepare_losses, LossesManager
+from .error_tables import prepare_error_analysis, ErrorAnalysisManager
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

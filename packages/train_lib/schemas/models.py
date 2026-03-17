@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Annotated, Literal, Union, Tuple, Optional, List, Dict
 
-from packages.train_lib.prepare_model.models.dag_net.nodes import AvailableNodeTypes
-from packages.train_lib.prepare_model.models.dag_net.layers.layers_builder import AvailableLayers
-from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import AvailablePostProcessors
+from ..prepare_model import AvailableNodeTypes
+from ..prepare_model import AvailableLayers
+from ..prepare_model import AvailablePostProcessors
 
 #----------------------------------
 class BatchNorm2dLayer(BaseModel):

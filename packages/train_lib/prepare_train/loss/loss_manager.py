@@ -2,7 +2,7 @@ import inspect
 import torch.nn as nn
 from pprint import pformat
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

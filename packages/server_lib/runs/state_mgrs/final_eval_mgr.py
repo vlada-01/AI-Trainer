@@ -1,5 +1,5 @@
-from packages.server_lib.runs.state_mgrs.state_mgr import StateManager, StateCode
-from packages.server_lib.runs.run_ctx import AvailableRunTypes
+from .state_mgr import StateManager, StateCode
+from packages.server_lib.runs import AvailableRunTypes
 
 class FinalEvalStateManager(StateManager):
     def __init__(self):

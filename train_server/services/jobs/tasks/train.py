@@ -1,7 +1,7 @@
 import mlflow
 
-from packages.mlflow_logger.writer import MlflowWriter
-from packages.train_lib.prepare_model.models.model.model import update_pps_cfg
+from packages.mlflow_logger import MlflowWriter
+from packages.train_lib.prepare_model import update_pps_cfg
 
 from packages.logger.logger import get_logger
 

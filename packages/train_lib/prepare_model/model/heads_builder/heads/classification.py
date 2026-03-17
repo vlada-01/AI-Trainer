@@ -1,6 +1,6 @@
 import torch
 
-from packages.train_lib.prepare_model.models.model.heads_builder.heads.base_head import Head
+from .base_head import Head
 
 class Classification(Head):
     def __init__(self, task):

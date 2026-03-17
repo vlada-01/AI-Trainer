@@ -1,13 +1,13 @@
 
 from packages.train_lib.tasks import AvailableTasks
 
-from packages.train_lib.prepare_train.metrics.metric import AvailableMetrics
-from packages.train_lib.prepare_train.metrics.classification.accuracy import Accuracy
-from packages.train_lib.prepare_train.metrics.classification.precision import Precision
-from packages.train_lib.prepare_train.metrics.classification.recall import Recall
-from packages.train_lib.prepare_train.metrics.classification.f1 import F1Score
+from .metric import AvailableMetrics
+from .classification import Accuracy
+from .classification import Precision
+from .classification import Recall
+from .classification import F1Score
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

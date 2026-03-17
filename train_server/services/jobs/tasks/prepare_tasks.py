@@ -1,13 +1,13 @@
-from packages.train_lib.prepare_data.data_builder import build_data
-from packages.train_lib.prepare_model.model_builder import build_model
-from packages.train_lib.prepare_train.train_builder import prepare_engine
-from packages.train_lib.prepare_model.models.model.model import update_model_pps, update_pps_cfg
+from packages.train_lib.prepare_data import build_data
+from packages.train_lib.prepare_model import build_model
+from packages.train_lib.prepare_model import update_model_pps, update_pps_cfg
+from packages.train_lib.prepare_train import build_engine
 
 import train_server.schemas.job_request as requests
 
-from packages.mlflow_logger.reader import MlflowReader
+from packages.mlflow_logger import MlflowReader
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 
@@ -42,7 +42,7 @@ def atomic_prepare_model(meta, cfg):
 
 def atomic_prepare_engine(model, train, val, test, meta, train_cfg):
     log.info('Initializing prepare engine manager process')
-    engine, train_meta = prepare_engine(train_cfg, model, train, val, test, meta)
+    engine, train_meta = build_engine(train_cfg, model, train, val, test, meta)
     ctx_dict = {}
     ctx_dict = update_ctx_dict(ctx_dict, 'cfgs', train_cfg=train_cfg)
     ctx_dict = update_ctx_dict(ctx_dict, 'runtime', engine=engine)

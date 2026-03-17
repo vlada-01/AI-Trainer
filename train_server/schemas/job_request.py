@@ -55,18 +55,9 @@ class StartTrainJobRequest(BaseModel):
     run_name: str
     model_name: str
 
-class InspectJobRequest(BaseModel):
-    run_id: str
-
 class PreparePostProcessingJobRequest(BaseModel):
     new_run_name: str
     post_processors: Dict[str, PPCfg]
-
-# class FineTuneJobRequest(BaseModel):
-#     new_run_name: str
-#     new_ds_cfg: FtDatasetCfg
-#     new_layers_cfg: FtLayersCfg
-#     new_train_cfg: FtTrainCfg
 
 class FinalEvalJobRequest(BaseModel):
     exp_name: str

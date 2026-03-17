@@ -6,7 +6,7 @@ from train_server.schemas.job_response import ErrorInfo
 
 from train_server.services.mlflow import get_experiments, get_run_results, get_runs, delete_run
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

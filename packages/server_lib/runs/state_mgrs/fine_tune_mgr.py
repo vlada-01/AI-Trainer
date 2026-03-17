@@ -1,4 +1,4 @@
-from packages.server_lib.runs.state_mgrs.state_mgr import StateManager, StateCode
+from .state_mgr import StateManager, StateCode
 from packages.server_lib.runs.run_ctx import AvailableRunTypes
 
 class FineTuneStateManager(StateManager):

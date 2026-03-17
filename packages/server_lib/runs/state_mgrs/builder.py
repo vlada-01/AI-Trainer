@@ -1,9 +1,9 @@
-from packages.server_lib.runs.run_ctx import AvailableRunTypes
+from packages.server_lib.runs import AvailableRunTypes
 
-from packages.server_lib.runs.state_mgrs.base_run_mgr import BaseRunStateManager
-from packages.server_lib.runs.state_mgrs.pp_run_mgr import PPRunStateManager
-from packages.server_lib.runs.state_mgrs.fine_tune_mgr import FineTuneStateManager
-from packages.server_lib.runs.state_mgrs.final_eval_mgr import FinalEvalStateManager
+from .base_run_mgr import BaseRunStateManager
+from .pp_run_mgr import PPRunStateManager
+from .fine_tune_mgr import FineTuneStateManager
+from .final_eval_mgr import FinalEvalStateManager
 
 STATE_MGR_REGISTRY_MAP = {
     AvailableRunTypes.base: BaseRunStateManager,

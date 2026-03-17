@@ -6,14 +6,11 @@ import asyncio
 import os
 
 from train_server.app_ctx import AppContext
-from train_server.routes.runs import router as runs_router
-from train_server.routes.hf_info import router as hf_info_router
-from train_server.routes.mlflow import router as mlflow_router
-
+from .routes import runs_router, hf_router, mlflow_router
 
 import train_server.utils.app_utils as utils
 
-from packages.logger.logger import setup_logging, get_logger
+from packages.logger import setup_logging, get_logger
 
 log = get_logger(__name__)
 
@@ -73,5 +70,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(runs_router)
-app.include_router(hf_info_router)
+app.include_router(hf_router)
 app.include_router(mlflow_router)

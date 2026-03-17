@@ -9,9 +9,9 @@ from train_server.services.jobs.tasks.final_evaluation import atomic_final_eval
 from train_server.services.jobs.jobs import try_create_job, get_job, start_job
 from train_server.services.runs import get_run
 
-from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
+from packages.server_lib.runs import StateCode
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

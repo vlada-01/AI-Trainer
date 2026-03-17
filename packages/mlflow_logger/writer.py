@@ -1,5 +1,5 @@
 import mlflow
-from packages.mlflow_logger.artifact_writer import ArtifactWriter
+from .artifact_writer import ArtifactWriter
 
 class MlflowWriter:
     def __init__(self, job_id, run_id):

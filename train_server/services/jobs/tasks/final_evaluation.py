@@ -1,9 +1,9 @@
 import os
 import mlflow
 
-from packages.mlflow_logger.writer import MlflowWriter
+from packages.mlflow_logger import MlflowWriter
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

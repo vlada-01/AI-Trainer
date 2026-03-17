@@ -1,11 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Union, List, Dict, Any
 
-from packages.train_lib.prepare_train.metrics.metric import AvailableMetrics
-
-from packages.train_lib.schemas.data import TransformStep
-from packages.train_lib.schemas.models import Layers
-
+from ..prepare_train import AvailableMetrics
 
 #----------------------------------
 class LrDecay(BaseModel):
@@ -37,27 +33,3 @@ Metrics = List[Union[
         # Literal[AvailableMetrics.bleu],
         # Literal[AvailableMetrics.perplexity],
     ]]
-
-# thresholds in [0..1]
-
-
-# class FtDatasetCfg(BaseModel):
-#     new_train_transform: Optional[List[TransformStep]] = None
-
-# # TODO: update this according to DAG
-# class FTLayersDetails(BaseModel):
-#     type: Union[Literal['backbone', 'new']]
-#     freeze: bool = False
-#     original_id: Optional[int] = None
-    
-# class FtLayersCfg(BaseModel):
-#     use_torch_layers: Optional[bool] = False
-#     layers: Layers
-#     ft_layers_details: List[FTLayersDetails]
-
-# class FtTrainCfg(BaseModel):
-#     epochs: int
-#     num_of_iters: int = 1
-#     optimizer: OptimizerConfig
-#     lr_decay: Optional[LrDecay] = None
-#     loss_fn: LossFnConfig

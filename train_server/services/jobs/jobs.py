@@ -1,15 +1,15 @@
 import os
 import asyncio
 
-from packages.server_lib.runs.job import Job, JobStatus
-from packages.server_lib.runs.state_mgrs.state_mgr import StateCode
-from packages.server_lib.runs.run_ctx import RunContext
+from packages.server_lib.runs import Job, JobStatus
+from packages.server_lib.runs import StateCode
+from packages.server_lib.runs import RunContext
 
-from train_server.schemas.job_response import ErrorInfo
+from train_server.schemas import ErrorInfo
 
 jobs_ttl = int(os.getenv("JOBS_TTL", "7200"))
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

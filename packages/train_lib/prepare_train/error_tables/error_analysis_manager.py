@@ -1,9 +1,9 @@
 from packages.train_lib.tasks import AvailableTasks
 
-from packages.train_lib.prepare_train.error_tables.classification.error_table import ClassificationErrorTable
-from packages.train_lib.prepare_train.error_tables.regression.error_table import RegressionErrorTable
+from . import ClassificationErrorTable
+from . import RegressionErrorTable
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

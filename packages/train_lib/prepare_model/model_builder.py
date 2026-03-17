@@ -1,7 +1,7 @@
-from packages.train_lib.prepare_model.meta import create_meta
-from packages.train_lib.prepare_model.models.model.model import create_model
+from .meta import create_meta
+from .model import create_model
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

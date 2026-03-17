@@ -1,11 +1,10 @@
-import torch
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 from pprint import pformat
 
-from packages.train_lib.prepare_data.metas.meta import DataMeta, MetaTypes
+from .meta import DataMeta, MetaTypes
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from packages.train_lib.prepare_train.error_tables.error_table import ErrorTable
+from ..error_table import ErrorTable
 
 class ClassificationErrorTable(ErrorTable):
     def __init__(self):

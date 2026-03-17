@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Literal, Union, Optional, Dict, Any, List
 
-from packages.train_lib.prepare_data.metas.meta import  MetaTypes
-from packages.train_lib.prepare_data.data_builder import AvailableProviders
-from packages.train_lib.prepare_data.transforms import AvailableTransforms
+from ..prepare_data import MetaTypes
+from ..prepare_data import AvailableProviders
+from ..prepare_data import AvailableTransforms
 
 class L1L2Norm(BaseModel):
     p: int = Field(..., ge=1, le=2)

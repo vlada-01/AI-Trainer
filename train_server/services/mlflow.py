@@ -1,15 +1,14 @@
 import os
 from uuid import uuid4
-from train_server.schemas.mlflow import Experiment, Run
+from train_server.schemas import Experiment, Run
 
-from packages.mlflow_logger.reader import MlflowReader
+from packages.mlflow_logger import MlflowReader
 
-mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
-
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 
+mlflow_public_uri = os.getenv("MLFLOW_PUBLIC_URI", "http://localhost:5000")
 
 def get_experiments(client):
     exps = client.search_experiments()

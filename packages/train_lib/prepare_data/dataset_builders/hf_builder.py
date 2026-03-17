@@ -4,10 +4,10 @@ from datasets import load_dataset, DatasetDict, Features
 from torch.utils.data import Dataset
 from pprint import pformat
 
-from packages.train_lib.prepare_data.metas.utils import update_meta
-from packages.train_lib.prepare_data.transforms import assemble_transforms
+from ..metas import update_meta
+from ..transforms import assemble_transforms
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

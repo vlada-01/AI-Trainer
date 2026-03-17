@@ -12,16 +12,29 @@ from packages.train_lib.prepare_model.models.model.model import Model
 from packages.train_lib.prepare_train.engines.engine_manager import EngineManager
 from packages.train_lib.meta import Meta
 
-from packages.server_lib.runs.state_mgrs.state_mgr import StateManager
-from packages.server_lib.runs.state_mgrs.builder import create_state_mgr
-from packages.server_lib.runs.job_mgr import JobManager, create_job_mgr
+from .state_mgrs import create_state_mgr, StateManager
+from .job_mgr import create_job_mgr, JobManager
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 
 runs_inactivity = int(os.getenv("RUNS_INACTIVITY", 1800))
 cleanup_jobs_interval = int(os.getenv("CLEANUP_JOBS_INTERVAL", "60"))
+
+class AvailableRunTypes(Enum):
+    base = 'base'
+    fine_tune = 'fine_tune'
+    post_process = 'post_process'
+    final_evaluation = 'final_evaluation'
+
+def create_run_ctx(run_cfg):
+    run_type = run_cfg.run_type
+    specs = run_cfg.specs
+    log.info(f'Initializing new RunContext for type: {run_type}')
+    run_ctx = RunContext(run_type, specs)
+    return run_ctx
+
 
 @dataclass
 class RunTime:
@@ -37,19 +50,6 @@ class Configs:
     dl_cfg: requests.PrepareDatasetJobRequest = None
     model_cfg: requests.PrepareModelJobRequest = None
     train_cfg: requests.PrepareTrainJobRequest = None
-
-class AvailableRunTypes(Enum):
-    base = 'base'
-    fine_tune = 'fine_tune'
-    post_process = 'post_process'
-    final_evaluation = 'final_evaluation'
-
-def create_run_ctx(run_cfg):
-    run_type = run_cfg.run_type
-    specs = run_cfg.specs
-    log.info(f'Initializing new RunContext for type: {run_type}')
-    run_ctx = RunContext(run_type, specs)
-    return run_ctx
 
 class RunContext:
     def __init__(self, run_type, specs):

@@ -1,4 +1,4 @@
-from packages.mlflow_logger.artifact_reader import ArtifactReader
+from .artifact_reader import ArtifactReader
 
 class MlflowReader:
     def __init__(self, job_id, run_id):

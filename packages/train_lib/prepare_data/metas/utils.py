@@ -1,8 +1,8 @@
 
-from packages.train_lib.prepare_data.metas.meta import MetaTypes
+from .meta import MetaTypes
 # from model_src.data.metas.tabular_meta import TabularMetaData
-from packages.train_lib.prepare_data.metas.image_meta import ImageDataMeta
-from packages.train_lib.prepare_data.metas.textual_meta import TextualDataMeta
+from .image_meta import ImageDataMeta
+from .textual_meta import TextualDataMeta
 
 from packages.logger.logger import get_logger
 

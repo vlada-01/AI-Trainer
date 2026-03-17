@@ -5,7 +5,7 @@ from train_server.services.hf_info import get_dataset_info
 from train_server.schemas.hf_info import DatasetInfoRequest, DatasetInfoResponse
 from train_server.schemas.job_response import ErrorInfo
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

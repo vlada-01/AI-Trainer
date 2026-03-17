@@ -1,7 +1,7 @@
-from packages.train_lib.prepare_train.engines.train_engine.engine import prepare_train_engine, TrainEngine
-from packages.train_lib.prepare_train.engines.eval_engine.engine import prepare_eval_engine, EvaluationEngine
+from . import prepare_train_engine, TrainEngine
+from . import prepare_eval_engine, EvaluationEngine
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

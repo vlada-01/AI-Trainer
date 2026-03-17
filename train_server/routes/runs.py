@@ -4,17 +4,16 @@ from fastapi import APIRouter, Request, HTTPException
 from train_server.schemas.runs import NewRunCfg, RunCtxResponse, ErrorInfo
 from train_server.services.runs import create_run, get_run
 
-from train_server.routes.runs_routes.exec_jobs import router as exec_router
-from train_server.routes.runs_routes.prepare_jobs import router as prepare_router
+from .runs_routes import exec_jobs_router, prepare_jobs_router
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
-router.include_router(exec_router)
-router.include_router(prepare_router)
+router.include_router(exec_jobs_router)
+router.include_router(prepare_jobs_router)
 
 @router.post('/', response_model=RunCtxResponse)
 async def new_run(request: Request, data: NewRunCfg):

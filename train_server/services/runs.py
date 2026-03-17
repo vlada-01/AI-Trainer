@@ -1,10 +1,10 @@
 from train_server.app_ctx import AppContext
 
-from packages.server_lib.runs.run_ctx import RunContext, create_run_ctx
+from packages.server_lib.runs import RunContext, create_run_ctx
 
-from train_server.schemas.runs import NewRunCfg
+from train_server.schemas import NewRunCfg
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

@@ -1,9 +1,9 @@
-from torch.utils.data import DataLoader
-from packages.train_lib.prepare_data.metas.meta import DataMeta, MetaTypes
-import torch
 from pprint import pformat
+from torch.utils.data import DataLoader
 
-from packages.logger.logger import get_logger
+from .meta import DataMeta, MetaTypes
+
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

@@ -1,6 +1,6 @@
-from packages.train_lib.prepare_data.metas.meta import DataMeta
-from packages.train_lib.prepare_train.meta import TrainMeta
-from packages.train_lib.prepare_model.meta import ModelMeta
+from .prepare_data import DataMeta
+from .prepare_model import ModelMeta
+from .prepare_train import TrainMeta
 
 class Meta:
     def __init__(self, specs_cfg):

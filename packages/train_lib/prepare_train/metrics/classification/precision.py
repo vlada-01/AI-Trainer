@@ -1,6 +1,6 @@
-from packages.train_lib.prepare_train.metrics.metric import Metric, AvailableMetrics
 import torch
 
+from ..metric import Metric, AvailableMetrics
 
 class Precision(Metric):
     def __init__(self):

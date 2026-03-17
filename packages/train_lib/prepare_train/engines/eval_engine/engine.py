@@ -1,10 +1,10 @@
 import torch
 
-from packages.train_lib.prepare_train.metrics.metrics_manager import MetricsManager
-from packages.train_lib.prepare_train.loss.loss_manager import LossesManager
-from packages.train_lib.prepare_train.error_tables.error_analysis_manager import ErrorAnalysisManager
+from ...metrics import MetricsManager
+from ...loss import LossesManager
+from ...error_tables import ErrorAnalysisManager
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

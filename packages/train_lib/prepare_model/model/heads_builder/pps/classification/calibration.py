@@ -1,9 +1,9 @@
 import torch
 
-from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import AvailablePostProcessors
-from packages.train_lib.prepare_model.models.model.heads_builder.pps.post_processor import PostProcessor
+from ..post_processor import AvailablePostProcessors
+from ..post_processor import PostProcessor
 
-from packages.logger.logger import get_logger
+from packages.logger import get_logger
 
 log = get_logger(__name__)
 

@@ -1,5 +1,6 @@
-from packages.train_lib.prepare_train.metrics.metric import Metric, AvailableMetrics
 import torch
+
+from ..metric import Metric, AvailableMetrics
 
 class  Recall(Metric):
     def __init__(self):
